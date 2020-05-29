@@ -1,5 +1,18 @@
 # pyquickstart
 
+### Usage
+
+You can run the training of `LeNet` on the `MNIST` dataset as follows:
+```bash
+PYTORCH_JIT=1 python nn_benchmark/main.py --network LeNet --dataset MNIST --epochs 3
+```
+The results can be observed under the experiments folder.
+
+You can then evaluate your network with the following command:
+```bash
+python nn_benchmark/main.py --evaluate --resume ./experiments/<your_folder>/checkpoints/best.tar
+```
+
 ### Installation
 
 I worked on the project through a virtual environment with `virtualenvwrapper`
