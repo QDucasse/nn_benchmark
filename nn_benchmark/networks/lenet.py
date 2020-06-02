@@ -11,20 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class LeNet(nn.Module):
-    '''This neural network consists of the following flow:
-        -                             Input:  [1000,  1, 28, 28]
-        - Layer    | Conv2D         | Output: [1000, 10, 24, 24]
-        - Layer    | MaxPool2D      | Output: [1000, 10, 12, 12]
-        - Function | ReLU           | Output: [1000, 10, 12, 12]
-        - Layer    | Conv2D         | Output: [1000, 20, 8, 8]
-        - Layer    | Dropout2D      | Output: [1000, 20, 8, 8]
-        - Layer    | MaxPool2D      | Output: [1000, 20, 4, 4]
-        - Function | Resize         | Output: [1000, 320]
-        - Function | ReLU           | Output: [1000, 50]
-        - Layer    | FullyConnected | Output: [1000, 50]
-        - Function | Dropout        | Output: [1000, 50]
-        - Layer    | FullyConnected | Output: [1000, 10]
-        - Function | LogSoftMax     | Output: [1000, 10]'''
+    '''LeNet architecture'''
 
     def __init__(self,in_channels=3):
         super(LeNet, self).__init__()

@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from nn_benchmark.networks.util import make_quant_conv2d, make_quant_linear, make_quant_relu
+from nn_benchmark.networks.util import make_quant_conv2d, make_quant_linear, make_quant_relu, make_quant_hard_tanh, make_quant_avg_pool
 
 # Conv2D parameters
 CNV_PADDING = 0
@@ -20,11 +20,9 @@ CNV_GROUPS  = 1
 CNV_KERNEL  = 5
 CNV_OUT_CH  = [6, 16, 120]
 
-# Dropout parameters
-DROP_PROB = 0.2
-
 # MaxPool2D parmeters
-POOL_SIZE = 2
+POOL_STRIDE = 1
+POOL_SIZE   = 2
 
 # FC parameters
 FC_IN_FEAT = [120, 84]
@@ -32,11 +30,11 @@ FC_IN_FEAT = [120, 84]
 class QuantLeNet5(nn.Module):
     '''LeNet neural network'''
     def __init__(self, num_classes=10, in_channels=1,
-                 weight_bit_width=1, act_bit_width=2, in_bit_width=1):
+                 weight_bit_width=8, act_bit_width=8, in_bit_width=8):
         super(QuantLeNet5, self).__init__()
 
         self.feature_extractor = nn.Sequential(
-            # First sequence: CONV => RELU => MAXPOOL
+            # First sequence: CONV => RELU => AVGPOOL
             make_quant_conv2d(in_channels  = in_channels,
                               out_channels = CNV_OUT_CH[0],
                               kernel_size  = CNV_KERNEL,
@@ -46,8 +44,12 @@ class QuantLeNet5(nn.Module):
                               bias         = False,
                               bit_width    = in_bit_width),
             make_quant_relu(act_bit_width),
+            # make_quant_avg_pool(kernel_size = POOL_SIZE,
+            #                     stride      = POOL_STRIDE,
+            #                     signed      = False,
+            #                     bit_width   = weight_bit_width),
             nn.MaxPool2d(kernel_size=POOL_SIZE),
-            # Second sequence: CONV => RELU => MAXPOOL
+            # Second sequence: CONV => RELU => AVGPOOL
             make_quant_conv2d(in_channels  = CNV_OUT_CH[0],
                               out_channels = CNV_OUT_CH[1],
                               kernel_size  = CNV_KERNEL,
@@ -57,6 +59,10 @@ class QuantLeNet5(nn.Module):
                               bias         = False,
                               bit_width    = weight_bit_width),
             make_quant_relu(act_bit_width),
+            # make_quant_avg_pool(kernel_size = POOL_SIZE,
+            #                     stride      = POOL_STRIDE,
+            #                     signed      = False,
+            #                     bit_width   = weight_bit_width),
             nn.MaxPool2d(kernel_size=POOL_SIZE),
             # Third sequence: CONV => RELU
             make_quant_conv2d(in_channels  = CNV_OUT_CH[1],
