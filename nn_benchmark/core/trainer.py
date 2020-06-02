@@ -1,5 +1,20 @@
 # -*- coding: utf-8 -*-
-
+#
+# MIT License
+#
+# Copyright (c) 2019 Xilinx
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# Included in:
 # nn_benchmark
 # author - Quentin Ducasse
 # https://github.com/QDucasse
@@ -23,9 +38,9 @@ from torch                    import nn
 from torch.utils.data         import DataLoader
 from torch.optim.lr_scheduler import MultiStepLR
 from torchvision              import transforms
-from torchvision.datasets     import MNIST, CIFAR10
+from torchvision.datasets     import MNIST, CIFAR10, FashionMNIST
 
-from nn_benchmark.networks import LeNet
+from nn_benchmark.networks import LeNet, LeNet5, QuantLeNet5
 from nn_benchmark.core.logger import Logger, TrainingEpochMeters, EvalEpochMeters
 
 
@@ -64,6 +79,8 @@ class Trainer(object):
         # Initialize the dataset
         self.train_loader = None
         self.test_loader  = None
+        self.classes      = None
+        self.num_classes  = None
         self.init_dataset(args.dataset,args.datadir,args.batch_size,args.num_workers)
 
         # Init starting values
@@ -85,16 +102,24 @@ class Trainer(object):
             self.output_dir_path, _ = os.path.split(resume)
             self.output_dir_path, _ = os.path.split(self.output_dir_path)
 
+
     def init_model(self,network,resume):
         '''Initializes the network architecture model'''
         if network == "LeNet":
             self.model = LeNet()
+
+        if network == "LeNet5":
+            self.model = LeNet5()
+
+        if network == "QuantLeNet5":
+            self.model = QuantLeNet5()
 
         if resume:
             print('Loading model checkpoint at: {}'.format(resume))
             package = torch.load(resume, map_location='cpu')
             model_state_dict = package['state_dict']
             self.model.load_state_dict(model_state_dict)
+
 
     def init_logger(self,dry_run,resume):
         '''Initializes the logger with the correct output directory and specify
@@ -114,12 +139,14 @@ class Trainer(object):
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
+
     def init_device(self):
         '''Initializes the device (CPU or GPUs)'''
         self.device = "cpu"
 
+
     def init_optim(self,optimizer,resume,evaluate):
-        '''Initializes the optimizer'''
+        '''Initializes the optimizer. Add an optimizer in the if checks.'''
         lr           = self.args.lr
         momentum     = self.args.momentum
         weight_decay = self.args.weight_decay
@@ -144,11 +171,13 @@ class Trainer(object):
             if 'best_val_acc' in package.keys():
                 self.best_val_acc = package['best_val_acc']
 
+
     def init_loss(self,loss):
-        '''Initializes the loss function'''
+        '''Initializes the loss function. Add an optimizer in the if checks'''
         if loss == 'CrossEntropy':
             self.criterion = nn.CrossEntropyLoss()
         # self.criterion = self.criterion.to(device=self.device)
+
 
     def init_scheduler(self,scheduler,milestones,resume,evaluate):
         '''Initializes the scheduler'''
@@ -165,19 +194,38 @@ class Trainer(object):
         if resume and not evaluate and self.scheduler is not None:
             self.scheduler.last_epoch = package['epoch'] - 1
 
+
     def init_dataset(self,dataset,datadir,batch_size,num_workers):
-        '''Initializes the dataset chosen'''
+        '''Initializes the dataset chosen. Add your dataset in the if checks'''
         transform_to_tensor = transforms.Compose([transforms.ToTensor()])
         if dataset == 'CIFAR10':
             train_transforms_list = [transforms.RandomCrop(32, padding=4),
                                      transforms.RandomHorizontalFlip(),
                                      transforms.ToTensor()]
             transform_train = transforms.Compose(train_transforms_list)
+            transform_test  = transform_to_tensor
             builder = CIFAR10
+            classes = ['Plane', 'Car', 'Bird', 'Cat', 'Deer', 'Dog', 'Frog', 'Horse', 'Ship', 'Truck']
+            self.model.n_classes = 10
 
         elif dataset == 'MNIST':
-            transform_train = transform_to_tensor
+            train_transforms_list = [transforms.Resize((32, 32)),
+                                     transforms.ToTensor()]
+            transform_train = transforms.Compose(train_transforms_list)
+            transform_test  = transform_train
             builder = MNIST
+            classes = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+            self.model.n_classes = 10
+
+        elif dataset == 'FASHION-MNIST':
+            train_transforms_list = [transforms.Resize((32, 32)),
+                                     transforms.ToTensor()]
+            transform_train = transforms.Compose(train_transforms_list)
+            transform_test  = transform_train
+            builder = FashionMNIST
+            classes = ['T-shirt/Top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+            self.model.n_classes = 10
+
         else:
             raise Exception("Dataset not supported: {}".format(dataset))
 
@@ -188,15 +236,18 @@ class Trainer(object):
         test_set = builder(root=datadir,
                            train=False,
                            download=True,
-                           transform=transform_to_tensor)
+                           transform=transform_test)
         self.train_loader = DataLoader(train_set,
                                        batch_size=batch_size,
                                        shuffle=True,
                                        num_workers=num_workers)
         self.test_loader = DataLoader(test_set,
                                       batch_size=batch_size,
-                                      shuffle=False,
+                                      shuffle=True,
                                       num_workers=num_workers)
+
+        self.classes     = classes
+        self.num_classes = len(classes)
 
 # ==============================================================================
 # ================================= ACCURACY ===================================
@@ -217,6 +268,10 @@ class Trainer(object):
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
 
+# ==============================================================================
+# =============================== MODEL SAVE ===================================
+# ==============================================================================
+
     def checkpoint_best(self, epoch, name):
         '''Save the checkpoint of the model'''
         best_path = os.path.join(self.checkpoints_dir_path, name)
@@ -229,11 +284,52 @@ class Trainer(object):
         }, best_path)
 
 # ==============================================================================
+# ============================== VISUALIZATION =================================
+# ==============================================================================
+
+    def display_6items(self):
+        '''Displays 6 random items from the dataset'''
+        # Run the network through some examples
+        examples = list(enumerate(self.train_loader))
+        batch_idx, (example_data, example_targets) = random.choice(examples)
+
+        # Plot the items
+        self.plot(example_data,example_targets,"Ground Truth")
+
+    def display_6predictions(self):
+        '''Displays the output of running the network over 6 random inputs from the dataset'''
+        # Run the network through some examples
+        examples = list(enumerate(self.test_loader))
+        batch_idx, (example_data, example_targets) = random.choice(examples)
+        with torch.no_grad():
+            output = self.model(example_data)
+            predictions = []
+            for i in range(6):
+                pred_class = output.data.max(1, keepdim=True)[1][i].item()
+                predictions.append(self.classes[pred_class])
+        # Plot the predictions
+        self.plot(example_data,predictions,"Prediction")
+
+    def plot(self,data,labels,title):
+        fig = plt.figure()
+        for i in range(6):
+            plt.subplot(2,3,i+1)
+            plt.tight_layout()
+            plt.imshow(data[i][0], cmap='gray', interpolation='none')
+            plt.title("{}: {}".format(title,labels[i]))
+            plt.xticks([])
+            plt.yticks([])
+        plt.show()
+
+# ==============================================================================
 # ======================== TRAINING AND EVALUATION =============================
 # ==============================================================================
 
     def train_model(self):
         print("Training")
+
+        if self.args.visualize:
+            self.display_6items()
 
         # training starts
         if self.args.detect_nan:
@@ -300,8 +396,13 @@ class Trainer(object):
         if not self.args.dry_run:
             return os.path.join(self.checkpoints_dir_path, "best.tar")
 
+        print("Training completed!")
+
     def eval_model(self, epoch=None):
         print("Evaluating")
+
+        if self.args.visualize:
+            self.display_6predictions()
 
         eval_meters = EvalEpochMeters()
 
@@ -340,9 +441,5 @@ class Trainer(object):
             #Eval batch ends
             self.logger.eval_batch_cli_log(eval_meters, i, len(self.test_loader))
 
+        print("Top 1 average: " + str(eval_meters.top1.avg))
         return eval_meters.top1.avg
-
-
-
-if __name__ == "__main__":
-    trainer = Trainer()

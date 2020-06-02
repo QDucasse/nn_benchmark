@@ -7,11 +7,8 @@
 
 from __future__ import absolute_import
 
-__all__ = ["trainer", "trainer", "inferencer","visualiser","logger","cli"]
+__all__ = ["trainer","logger","cli"]
 
 from .cli        import *
 from .trainer    import *
-from .trainer   import *
-from .inferencer import *
-from .visualiser import *
 from .logger     import *

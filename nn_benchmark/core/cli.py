@@ -1,5 +1,20 @@
 # -*- coding: utf-8 -*-
-
+#
+# MIT License
+#
+# Copyright (c) 2019 Xilinx
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# Included in: 
 # nn_benchmark
 # author - Quentin Ducasse
 # https://github.com/QDucasse
@@ -12,7 +27,6 @@ import os
 import sys
 import torch
 
-from nn_benchmark.core.objdict import ObjDict
 from nn_benchmark.core.trainer import Trainer
 
 
@@ -75,9 +89,29 @@ class Parser(argparse.ArgumentParser):
         self.add_argument("--pretrained", action='store_true', help="Load pretrained model")
         # Dataset
         self.add_argument("--dataset", default="MNIST", help="Dataset to train on")
+        self.add_argument("--visualize",action="store_true",help="Visualization of the items or predictions")
 
     def parse(self,args):
         return self.parse_args(args)
+
+
+class ObjDict(dict):
+    def __getattr__(self, name):
+        if name in self:
+            return self[name]
+        else:
+            raise AttributeError("No such attribute: " + name)
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+    def __delattr__(self, name):
+        if name in self:
+            del self[name]
+        else:
+            raise AttributeError("No such attribute: " + name)
+
+
 
 class CLI(object):
     '''Command Line Interface holding the trainer and parser and connecting the two'''

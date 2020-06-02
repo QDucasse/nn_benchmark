@@ -7,8 +7,6 @@
 
 from __future__ import absolute_import
 
-__all__ = ["lenet"]
+__all__ = ["quantized_layers"]
 
-from .lenet       import *
-from .lenet5      import *
-from .quantlenet5 import *
+from .quantized_layers import *
