@@ -40,9 +40,20 @@ from torch.optim.lr_scheduler import MultiStepLR
 from torchvision              import transforms
 from torchvision.datasets     import MNIST, CIFAR10, FashionMNIST
 
-from nn_benchmark.networks import LeNet, LeNet5, QuantLeNet5
+from nn_benchmark.networks    import LeNet, LeNet5, VGG11, VGG13, VGG16, VGG19, MobilenetV1
+from nn_benchmark.networks    import QuantLeNet5, QuantCNV
 from nn_benchmark.core.logger import Logger, TrainingEpochMeters, EvalEpochMeters
 
+networks = {"LeNet": LeNet,
+            "LeNet5": LeNet5,
+            "QuantLeNet5": QuantLeNet5,
+            "QuantCNV": QuantCNV,
+            "VGG11": VGG11,
+            "VGG13": VGG13,
+            "VGG16": VGG16,
+            "VGG19": VGG19,
+            "MobilenetV1": MobilenetV1
+}
 
 class Trainer(object):
     def __init__(self,args):
@@ -53,6 +64,15 @@ class Trainer(object):
         # Initialize the device
         self.device = None
         self.init_device()
+
+        # Initialize the dataset
+        self.train_loader = None
+        self.test_loader  = None
+        self.classes      = None
+        self.num_classes  = None
+        self.in_channels  = None
+        self.init_dataset(args.dataset,args.datadir,args.batch_size,args.num_workers)
+
 
         # Initialize the model
         self.model = None
@@ -76,13 +96,6 @@ class Trainer(object):
         self.scheduler = None
         self.init_scheduler(args.scheduler,args.milestones,args.resume,args.evaluate)
 
-        # Initialize the dataset
-        self.train_loader = None
-        self.test_loader  = None
-        self.classes      = None
-        self.num_classes  = None
-        self.init_dataset(args.dataset,args.datadir,args.batch_size,args.num_workers)
-
         # Init starting values
         self.starting_epoch = 1
         self.best_val_acc = 0
@@ -105,14 +118,9 @@ class Trainer(object):
 
     def init_model(self,network,resume):
         '''Initializes the network architecture model'''
-        if network == "LeNet":
-            self.model = LeNet()
-
-        if network == "LeNet5":
-            self.model = LeNet5()
-
-        if network == "QuantLeNet5":
-            self.model = QuantLeNet5()
+        builder = networks[network]
+        self.model = builder(n_classes   = self.num_classes,
+                             in_channels = self.in_channels)
 
         if resume:
             print('Loading model checkpoint at: {}'.format(resume))
@@ -152,13 +160,13 @@ class Trainer(object):
         weight_decay = self.args.weight_decay
         if optimizer == 'ADAM':
             self.optimizer = optim.Adam(self.model.parameters(),
-                                        lr=args.lr,
-                                        weight_decay=args.weight_decay)
+                                        lr=lr,
+                                        weight_decay=weight_decay)
         elif optimizer == "SGD":
             self.optimizer = optim.SGD(self.model.parameters(),
-                                       lr=self.args.lr,
-                                       momentum=self.args.momentum,
-                                       weight_decay=self.args.weight_decay)
+                                       lr=lr,
+                                       momentum=momentum,
+                                       weight_decay=weight_decay)
         else:
             raise Exception("Unrecognized optimizer {}".format(optim))
 
@@ -206,7 +214,7 @@ class Trainer(object):
             transform_test  = transform_to_tensor
             builder = CIFAR10
             classes = ['Plane', 'Car', 'Bird', 'Cat', 'Deer', 'Dog', 'Frog', 'Horse', 'Ship', 'Truck']
-            self.model.n_classes = 10
+            in_channels = 3
 
         elif dataset == 'MNIST':
             train_transforms_list = [transforms.Resize((32, 32)),
@@ -215,7 +223,7 @@ class Trainer(object):
             transform_test  = transform_train
             builder = MNIST
             classes = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-            self.model.n_classes = 10
+            in_channels = 1
 
         elif dataset == 'FASHION-MNIST':
             train_transforms_list = [transforms.Resize((32, 32)),
@@ -224,7 +232,7 @@ class Trainer(object):
             transform_test  = transform_train
             builder = FashionMNIST
             classes = ['T-shirt/Top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
-            self.model.n_classes = 10
+            in_channels = 1
 
         else:
             raise Exception("Dataset not supported: {}".format(dataset))
@@ -248,6 +256,7 @@ class Trainer(object):
 
         self.classes     = classes
         self.num_classes = len(classes)
+        self.in_channels = in_channels
 
 # ==============================================================================
 # ================================= ACCURACY ===================================
@@ -373,11 +382,10 @@ class Trainer(object):
                 # training batch ends
                 start_data_loading = time.time()
 
-                # Set the learning rate
+            # Set the learning rate
             if self.scheduler is not None:
                 self.scheduler.step(epoch)
             else:
-                # Set the learning rate
                 if epoch%40==0:
                     self.optimizer.param_groups[0]['lr'] *= 0.5
 

@@ -5,18 +5,18 @@
 # https://github.com/QDucasse
 # quentin.ducasse@ensta-bretagne.org
 
-# LeNet5 architecture
+# LeNet5 architecture in PyTorch
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 class LeNet5(nn.Module):
-
-    def __init__(self, n_classes=10):
+    '''LeNet5 architecture in PyTorch'''
+    def __init__(self, n_classes=10, in_channels=1):
         super(LeNet5, self).__init__()
         self.feature_extractor = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5, stride=1),
+            nn.Conv2d(in_channels=in_channels, out_channels=6, kernel_size=5, stride=1),
             nn.Tanh(),
             nn.AvgPool2d(kernel_size=2),
             nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5, stride=1),
@@ -34,10 +34,8 @@ class LeNet5(nn.Module):
 
         self.name = "LeNet5"
 
-
     def forward(self, x):
-        x = self.feature_extractor(x)
-        x = torch.flatten(x, 1)
-        logits = self.classifier(x)
-        probs = F.softmax(logits, dim=1)
-        return probs
+        out  = self.feature_extractor(x)
+        out = torch.flatten(out, 1)
+        out = self.classifier(out)
+        return F.softmax(out, dim=1)
