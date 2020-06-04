@@ -57,7 +57,6 @@ class QuantCNV(Module):
 
     def __init__(self, n_classes=10, weight_bit_width=1, act_bit_width=1, in_bit_width=8, in_channels=3):
         super(QuantCNV, self).__init__()
-
         weight_quant_type = get_quant_type(weight_bit_width)
         act_quant_type = get_quant_type(act_bit_width)
         in_quant_type = get_quant_type(in_bit_width)
@@ -72,9 +71,9 @@ class QuantCNV(Module):
                                                 scaling_impl_type=ScalingImplType.CONST))
 
         for out_ch, is_pool_enabled in CNV_OUT_CH_POOL:
-            self.conv_features.append(make_quant_conv2d(in_channels=in_channels,
-                                                        out_channels=out_ch,
-                                                        bit_width=weight_bit_width,
+            self.conv_features.append(make_quant_conv2d(in_channels  = in_channels,
+                                                        out_channels = out_ch,
+                                                        bit_width    = weight_bit_width,
                                                         kernel_size  = CNV_KERNEL,
                                                         stride       = CNV_STRIDE,
                                                         padding      = CNV_PADDING,

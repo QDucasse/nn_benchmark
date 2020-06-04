@@ -32,7 +32,7 @@ FC_IN_FEAT = [120, 84]
 class QuantLeNet5(nn.Module):
     '''LeNet5 neural network'''
     def __init__(self, n_classes=10, in_channels=1,
-                 weight_bit_width=2, act_bit_width=2, in_bit_width=2):
+                 weight_bit_width=1, act_bit_width=1, in_bit_width=8):
         super(QuantLeNet5, self).__init__()
 
         self.feature_extractor = nn.Sequential(
@@ -90,11 +90,13 @@ class QuantLeNet5(nn.Module):
                               bit_width    = weight_bit_width)
         )
 
+        self.initialize_weights()
+        self.name = "QuantLeNet5"
+
+    def initialize_weights(self):
         for m in self.modules():
           if isinstance(m, qnn.QuantConv2d) or isinstance(m, qnn.QuantLinear):
             torch.nn.init.uniform_(m.weight.data, -1, 1)
-
-        self.name = "QuantLeNet5"
 
     def forward(self, x):
         x = self.feature_extractor(x)

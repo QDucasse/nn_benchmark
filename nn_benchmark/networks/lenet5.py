@@ -6,6 +6,7 @@
 # quentin.ducasse@ensta-bretagne.org
 
 # LeNet5 architecture in PyTorch
+# Taken from http://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf
 
 import torch
 import torch.nn as nn
@@ -15,6 +16,7 @@ class LeNet5(nn.Module):
     '''LeNet5 architecture in PyTorch'''
     def __init__(self, n_classes=10, in_channels=1):
         super(LeNet5, self).__init__()
+
         self.feature_extractor = nn.Sequential(
             nn.Conv2d(in_channels=in_channels, out_channels=6, kernel_size=5, stride=1),
             nn.Tanh(),

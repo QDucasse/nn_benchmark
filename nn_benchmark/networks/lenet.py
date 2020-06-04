@@ -16,10 +16,10 @@ class LeNet(nn.Module):
     def __init__(self, n_classes=10, in_channels=1):
         super(LeNet, self).__init__()
         self.feature_extractor = nn.Sequential(
-            nn.Conv2d(in_channels, 6, 5),
+            nn.Conv2d(in_channels=in_channels, out_channels=6, kernel_size=5, stride=1),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),
-            nn.Conv2d(6, 16, 5),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2),
         )

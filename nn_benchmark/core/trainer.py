@@ -41,7 +41,7 @@ from torchvision              import transforms
 from torchvision.datasets     import MNIST, CIFAR10, FashionMNIST
 
 from nn_benchmark.networks    import LeNet, LeNet5, VGG11, VGG13, VGG16, VGG19, MobilenetV1
-from nn_benchmark.networks    import QuantLeNet5, QuantCNV
+from nn_benchmark.networks    import QuantLeNet5, QuantCNV, QuantMobilenetV1, QuantVGG11, QuantVGG13, QuantVGG16, QuantVGG19
 from nn_benchmark.core.logger import Logger, TrainingEpochMeters, EvalEpochMeters
 
 networks = {"LeNet": LeNet,
@@ -52,7 +52,12 @@ networks = {"LeNet": LeNet,
             "VGG13": VGG13,
             "VGG16": VGG16,
             "VGG19": VGG19,
-            "MobilenetV1": MobilenetV1
+            "QuantVGG11": QuantVGG11,
+            "QuantVGG13": QuantVGG13,
+            "QuantVGG16": QuantVGG16,
+            "QuantVGG19": QuantVGG19,
+            "MobilenetV1": MobilenetV1,
+            "QuantMobilenetV1": QuantMobilenetV1
 }
 
 class Trainer(object):
@@ -111,9 +116,9 @@ class Trainer(object):
         experiment_name = "{0}_{1}".format(self.model.name, datetime.now().strftime('%Y%m%d_%H%M%S'))
         self.output_dir_path = os.path.join(self.args.experiments, experiment_name)
         # Goes back to the experiments folder in case of resume
-        if self.args.resume:
-            self.output_dir_path, _ = os.path.split(resume)
-            self.output_dir_path, _ = os.path.split(self.output_dir_path)
+        # if self.args.resume:
+        #     self.output_dir_path, _ = os.path.split(resume)
+        #     self.output_dir_path, _ = os.path.split(self.output_dir_path)
 
 
     def init_model(self,network,resume):
@@ -189,11 +194,13 @@ class Trainer(object):
 
     def init_scheduler(self,scheduler,milestones,resume,evaluate):
         '''Initializes the scheduler'''
+        # STEP scheduler, will modify the learning rate when the epoch correspond to the <milestones>
         if scheduler == 'STEP':
             milestones = [int(i) for i in milestones.split(',')]
             self.scheduler = MultiStepLR(optimizer=self.optimizer,
                                          milestones=milestones,
                                          gamma=0.1)
+        # FIXED scheduler, the learning rate is untouched
         elif scheduler == 'FIXED':
             self.scheduler = None
         else:
@@ -205,17 +212,23 @@ class Trainer(object):
 
     def init_dataset(self,dataset,datadir,batch_size,num_workers):
         '''Initializes the dataset chosen. Add your dataset in the if checks'''
-        transform_to_tensor = transforms.Compose([transforms.ToTensor()])
+        # CIFAR10 dataset, colored images (3 channels) of 10 distinct classes
         if dataset == 'CIFAR10':
-            train_transforms_list = [transforms.RandomCrop(32, padding=4),
+            transform_train = transforms.Compose(
+                                    [transforms.RandomCrop(32, padding=4),
                                      transforms.RandomHorizontalFlip(),
-                                     transforms.ToTensor()]
-            transform_train = transforms.Compose(train_transforms_list)
-            transform_test  = transform_to_tensor
+                                     transforms.ToTensor(),
+                                     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))]
+                            )
+            transform_test  = transforms.Compose(
+                                    [transforms.ToTensor(),
+                                     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))]
+                            )
             builder = CIFAR10
             classes = ['Plane', 'Car', 'Bird', 'Cat', 'Deer', 'Dog', 'Frog', 'Horse', 'Ship', 'Truck']
             in_channels = 3
 
+        # MNIST dataset, handwritten digits separated in 10 classes of 28*28 black and white (1 channel) images
         elif dataset == 'MNIST':
             train_transforms_list = [transforms.Resize((32, 32)),
                                      transforms.ToTensor()]
@@ -225,6 +238,7 @@ class Trainer(object):
             classes = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
             in_channels = 1
 
+        # FashionMNIST dataset, handwritten digits separated in 10 classes of 28*28 black and white (1 channel) images
         elif dataset == 'FASHION-MNIST':
             train_transforms_list = [transforms.Resize((32, 32)),
                                      transforms.ToTensor()]
@@ -237,6 +251,7 @@ class Trainer(object):
         else:
             raise Exception("Dataset not supported: {}".format(dataset))
 
+        # Extract the builders for the dataset
         train_set = builder(root=datadir,
                             train=True,
                             download=True,
@@ -245,6 +260,7 @@ class Trainer(object):
                            train=False,
                            download=True,
                            transform=transform_test)
+        # Create the corresponding DataLoaders
         self.train_loader = DataLoader(train_set,
                                        batch_size=batch_size,
                                        shuffle=True,
@@ -340,7 +356,7 @@ class Trainer(object):
         if self.args.visualize:
             self.display_6items()
 
-        # training starts
+        # Training starts
         if self.args.detect_nan:
             torch.autograd.set_detect_anomaly(True)
 
@@ -356,20 +372,19 @@ class Trainer(object):
                 (input, target) = data
                 # input = input.to(self.device, non_blocking=True)
                 # target = target.to(self.device, non_blocking=True)
-                target_var = target
-                # measure data loading time
+                # Measure data loading time --> "Data" in the logger
                 epoch_meters.data_time.update(time.time() - start_data_loading)
                 # Training batch starts
                 start_batch = time.time()
                 output = self.model(input)
-                loss = self.criterion(output, target_var)
+                loss = self.criterion(output, target)
 
-                # compute gradient and do SGD step
+                # Compute gradient and perform the optimizer step
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-                # measure elapsed time
+                # Measure overall elapsed time --> "Time" column in the logger
                 epoch_meters.batch_time.update(time.time() - start_batch)
 
                 if i % int(self.args.log_freq) == 0 or i == len(self.train_loader) - 1:
@@ -379,28 +394,30 @@ class Trainer(object):
                     epoch_meters.top5.update(prec5.item(), input.size(0))
                     self.logger.training_batch_cli_log(epoch_meters, epoch, i, len(self.train_loader))
 
-                # training batch ends
+                # Training batch ends
                 start_data_loading = time.time()
 
-            # Set the learning rate
+            # Set the learning rate with the scheduler or halves the learning rate every 40 epochs
             if self.scheduler is not None:
                 self.scheduler.step(epoch)
             else:
                 if epoch%40==0:
                     self.optimizer.param_groups[0]['lr'] *= 0.5
 
-            # Perform eval
+            # Perform evaluation
             with torch.no_grad():
                 top1avg = self.eval_model(epoch)
 
-            # checkpoint
+            # Checkpoint save:
+            # If the top 1 average is better the one from the last epoch --> Save under "best.tar"
+            # Else --> Save under "checkpoint.tar"
             if top1avg >= self.best_val_acc and not self.args.dry_run:
                 self.best_val_acc = top1avg
                 self.checkpoint_best(epoch, "best.tar")
             elif not self.args.dry_run:
                 self.checkpoint_best(epoch, "checkpoint.tar")
 
-        # training ends
+        # Training ends
         if not self.args.dry_run:
             return os.path.join(self.checkpoints_dir_path, "best.tar")
 
@@ -414,34 +431,44 @@ class Trainer(object):
 
         eval_meters = EvalEpochMeters()
 
-        # switch to evaluate mode
+        # Switch to evaluate mode
         self.model.eval()
         self.criterion.eval()
 
         for i, data in enumerate(self.test_loader):
-
-            end = time.time()
+            # Compute output
+            # -- Time start
+            model_time_start = time.time()
+            # -- Input processing
             (input, target) = data
             # input = input.to(self.device, non_blocking=True)
             # target = target.to(self.device, non_blocking=True)
             target_var = target
-
-            # compute output
             output = self.model(input)
+            # -- Time stop and log
+            model_time_end = time.time()
+            model_time = model_time_end - model_time_start
+            eval_meters.model_time.update(model_time)
 
-            # measure model elapsed time
-            eval_meters.model_time.update(time.time() - end)
-            end = time.time()
-
-            #compute loss
+            # Compute loss
+            # -- Time start
+            loss_time_start = time.time()
+            # -- Loss processing
             loss = self.criterion(output, target_var)
-            eval_meters.loss_time.update(time.time() - end)
+            # -- Time stop and log
+            loss_time_end = time.time()
+            loss_time = loss_time_start - loss_time_end
+            eval_meters.loss_time.update(loss_time)
 
+            # Get the prediction
             pred = output.data.argmax(1, keepdim=True)
+            # Check for equality
             correct = pred.eq(target.data.view_as(pred)).sum()
+            # Top 1 prec
             prec1 = 100. * correct.float() / input.size(0)
-
+            # Top 5 prec
             _, prec5 = self.accuracy(output, target, topk=(1, 5))
+            # Precision logging
             eval_meters.losses.update(loss.item(), input.size(0))
             eval_meters.top1.update(prec1.item(), input.size(0))
             eval_meters.top5.update(prec5.item(), input.size(0))
