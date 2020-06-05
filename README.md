@@ -1,4 +1,6 @@
-# pyquickstart
+# Neural Network benchmark
+
+This project consists of an utility wrapper around PyTorch and Brevitas to specify the network, dataset and parameters to train with.
 
 ### Usage
 
@@ -12,6 +14,23 @@ You can then evaluate your network with the following command:
 ```bash
 python nn_benchmark/main.py --evaluate --resume ./experiments/<your_folder>/checkpoints/best.tar
 ```
+### Available networks and datasets
+
+The following networks are supported:
+- LeNet
+- LeNet5
+- VGG (11/13/16/19)
+- MobilenetV1
+
+Their quantized counterparts are available as well:
+- QuantLeNet5
+- QuantVGG (11/13/16/19)
+- QuantMobilenetV1
+
+The following datasets can be used:
+- MNIST
+- FASHION-MNIST
+- CIFAR10
 
 ### Installation
 
@@ -40,6 +59,14 @@ virtual environment, the installation proceeds as follows:
     $ workon VIRTUALENV_NAME
     $ pip install -e .
   ```
+
+Finally, whether you choose the first or second option, you will need brevitas if you want to use quantized networks. The installation is better performed from source and can be done as follows (in your native or virtual environment):
+
+```bash
+    $ git clone https://github.com/Xilinx/brevitas.git
+    $ cd brevitas
+    $ pip install -e .
+```
 ---
 ### Structure of the project
 
