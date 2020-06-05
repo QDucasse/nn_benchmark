@@ -26,8 +26,8 @@ from brevitas.nn import QuantConv2d, QuantHardTanh, QuantLinear
 from brevitas.core.restrict_val import RestrictValueType
 from brevitas.core.scaling import ScalingImplType
 
-from nn_benchmark.networks.quant_utils import TensorNorm, make_quant_conv2d, make_quant_linear, make_quant_hard_tanh, get_quant_type
-
+from nn_benchmark.networks.quant_utils import make_quant_conv2d, make_quant_linear, make_quant_hard_tanh, get_quant_type
+from nn_benchmark.extensions           import TensorNorm
 
 
 # QuantConv2d configuration

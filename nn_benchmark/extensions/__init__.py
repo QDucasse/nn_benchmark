@@ -7,8 +7,7 @@
 
 from __future__ import absolute_import
 
-__all__ = ["common","quant_activations","quant_layers"]
+__all__ = ["tensor_norm","squared_hinge_loss"]
 
-from .common            import *
-from .quant_activations import *
-from .quant_layers      import *
+from .squared_hinge_loss import *
+from .tensor_norm        import *

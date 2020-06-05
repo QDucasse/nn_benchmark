@@ -42,6 +42,8 @@ from torchvision.datasets     import MNIST, CIFAR10, FashionMNIST
 
 from nn_benchmark.networks    import LeNet, LeNet5, VGG11, VGG13, VGG16, VGG19, MobilenetV1
 from nn_benchmark.networks    import QuantLeNet5, QuantCNV, QuantMobilenetV1, QuantVGG11, QuantVGG13, QuantVGG16, QuantVGG19
+
+from nn_benchmark.extensions  import SqrHingeLoss
 from nn_benchmark.core.logger import Logger, TrainingEpochMeters, EvalEpochMeters
 
 networks = {"LeNet": LeNet,
@@ -187,9 +189,13 @@ class Trainer(object):
 
     def init_loss(self,loss):
         '''Initializes the loss function. Add an optimizer in the if checks'''
-        if loss == 'CrossEntropy':
+        if loss == "CrossEntropy":
             self.criterion = nn.CrossEntropyLoss()
+        elif loss == "SqrHinge":
+            self.criterion = SqrHingeLoss()
         # self.criterion = self.criterion.to(device=self.device)
+        else:
+            raise Exception("Unrecognized loss function {}".format(loss))
 
 
     def init_scheduler(self,scheduler,milestones,resume,evaluate):
