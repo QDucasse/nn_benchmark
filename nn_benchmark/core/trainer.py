@@ -43,7 +43,7 @@ from torchvision.datasets     import MNIST, CIFAR10, FashionMNIST
 from nn_benchmark.networks    import LeNet, LeNet5, VGG11, VGG13, VGG16, VGG19, MobilenetV1
 from nn_benchmark.networks    import QuantLeNet5, QuantCNV, QuantMobilenetV1, QuantVGG11, QuantVGG13, QuantVGG16, QuantVGG19
 
-from nn_benchmark.extensions  import SqrHingeLoss
+from nn_benchmark.extensions  import SqrHingeLoss, GTSRB
 from nn_benchmark.core.logger import Logger, TrainingEpochMeters, EvalEpochMeters
 
 networks = {"LeNet": LeNet,
@@ -253,6 +253,41 @@ class Trainer(object):
             builder = FashionMNIST
             classes = ['T-shirt/Top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
             in_channels = 1
+
+        # GTSRB dataset, handwritten digits separated in 10 classes of 28*28 black and white (1 channel) images
+        elif dataset == 'GTSRB':
+            train_transforms_list = [ transforms.Resize((32, 32)),
+                                      transforms.ToTensor(),
+                                      transforms.Normalize(
+                                         (0.1307,), (0.3081,))]
+            transform_train = transforms.Compose(train_transforms_list)
+            transform_test  = transform_train
+            builder = GTSRB
+            classes = ['Speed limit (20km/h)',                'Speed limit (30km/h)',
+                            'Speed limit (50km/h)',                'Speed limit (60km/h)',
+                            'Speed limit (70km/h)',                'Speed limit (80km/h)',
+                            'End of speed limit (80km/h)',         'Speed limit (100km/h)',
+                            'Speed limit (120km/h)',               'No passing',
+                            'No passing for heavy vehicles',       'Right-of-way at next intersection',
+                            'Priority road',                       'Yield',
+                            'Stop',                                'No vehicles',
+                            'Heavy vehicles prohibited',           'No entry',
+                            'General caution',                     'Dangerous curve to the left',
+                            'Dangerous curve to the right',        'Double curve',
+                            'Bumpy road',                          'Slippery road',
+                            'Road narrows on the right',           'Road work',
+                            'Traffic signals',                     'Pedestrians',
+                            'Children crossing',                   'Bicycles crossing',
+                            'Beware of ice/snow',                  'Wild animals crossing',
+                            'End of all speed and passing limits', 'Turn right ahead',
+                            'Turn left ahead',                     'Ahead only',
+                            'Go straight or right',                'Go straight or left',
+                            'Keep right',                          'Keep left',
+                            'Roundabout mandatory',                'End of no passing',
+                            'End of no passing by heavy vehicles'
+                         ]
+            in_channels = 3
+
 
         else:
             raise Exception("Dataset not supported: {}".format(dataset))
