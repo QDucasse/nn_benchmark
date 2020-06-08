@@ -43,8 +43,9 @@ from torchvision.datasets     import MNIST, CIFAR10, FashionMNIST
 from nn_benchmark.networks    import LeNet, LeNet5, VGG11, VGG13, VGG16, VGG19, MobilenetV1
 from nn_benchmark.networks    import QuantLeNet5, QuantCNV, QuantMobilenetV1, QuantVGG11, QuantVGG13, QuantVGG16, QuantVGG19
 
-from nn_benchmark.extensions  import SqrHingeLoss, GTSRB
-from nn_benchmark.core.logger import Logger, TrainingEpochMeters, EvalEpochMeters
+from nn_benchmark.extensions   import SqrHingeLoss, GTSRB
+from nn_benchmark.core.logger  import Logger, TrainingEpochMeters, EvalEpochMeters
+from nn_benchmark.core.plotter import Plotter
 
 networks = {"LeNet": LeNet,
             "LeNet5": LeNet5,
@@ -78,8 +79,8 @@ class Trainer(object):
         self.classes      = None
         self.num_classes  = None
         self.in_channels  = None
+        self.plot_set     = None
         self.init_dataset(args.dataset,args.datadir,args.batch_size,args.num_workers)
-
 
         # Initialize the model
         self.model = None
@@ -92,6 +93,10 @@ class Trainer(object):
         # Initialize the logger
         self.logger = None
         self.init_logger(args.dry_run,args.resume)
+
+        # Initialize the plotter
+        self.plotter = None
+        self.init_plotter(self.plot_set, self.model, self.classes)
 
         # Initialize the optimizer
         self.optimizer = None
@@ -118,9 +123,9 @@ class Trainer(object):
         experiment_name = "{0}_{1}".format(self.model.name, datetime.now().strftime('%Y%m%d_%H%M%S'))
         self.output_dir_path = os.path.join(self.args.experiments, experiment_name)
         # Goes back to the experiments folder in case of resume
-        # if self.args.resume:
-        #     self.output_dir_path, _ = os.path.split(resume)
-        #     self.output_dir_path, _ = os.path.split(self.output_dir_path)
+        if self.args.resume:
+            self.output_dir_path, _ = os.path.split(resume)
+            self.output_dir_path, _ = os.path.split(self.output_dir_path)
 
 
     def init_model(self,network,resume):
@@ -146,6 +151,11 @@ class Trainer(object):
                 os.mkdir(self.output_dir_path)
                 os.mkdir(self.checkpoints_dir_path)
         self.logger = Logger(self.output_dir_path, dry_run)
+
+    def init_plotter(self, plot_set, model, classes):
+        '''Initializes the plotter on a plot set with no transformations and a given
+           trained model'''
+        self.plotter = Plotter(plot_set, model, classes)
 
 
     def init_randomness(self,seed):
@@ -178,6 +188,7 @@ class Trainer(object):
             raise Exception("Unrecognized optimizer {}".format(optim))
 
         if resume and not evaluate:
+            package = torch.load(resume, map_location='cpu')
             self.logger.log.info("Loading optimizer checkpoint")
             if 'optim_dict' in package.keys():
                 self.optimizer.load_state_dict(package['optim_dict'])
@@ -206,7 +217,7 @@ class Trainer(object):
             self.scheduler = MultiStepLR(optimizer=self.optimizer,
                                          milestones=milestones,
                                          gamma=0.1)
-        # FIXED scheduler, the learning rate is untouched
+        # FIXED scheduler, the learning rate is untouched (or at least given a default decay)
         elif scheduler == 'FIXED':
             self.scheduler = None
         else:
@@ -218,6 +229,8 @@ class Trainer(object):
 
     def init_dataset(self,dataset,datadir,batch_size,num_workers):
         '''Initializes the dataset chosen. Add your dataset in the if checks'''
+        transform_plot = transforms.Compose([transforms.Resize((32, 32)),
+                                             transforms.ToTensor()])
         # CIFAR10 dataset, colored images (3 channels) of 10 distinct classes
         if dataset == 'CIFAR10':
             transform_train = transforms.Compose(
@@ -263,28 +276,28 @@ class Trainer(object):
             transform_train = transforms.Compose(train_transforms_list)
             transform_test  = transform_train
             builder = GTSRB
-            classes = ['Speed limit (20km/h)',                'Speed limit (30km/h)',
-                            'Speed limit (50km/h)',                'Speed limit (60km/h)',
-                            'Speed limit (70km/h)',                'Speed limit (80km/h)',
-                            'End of speed limit (80km/h)',         'Speed limit (100km/h)',
-                            'Speed limit (120km/h)',               'No passing',
-                            'No passing for heavy vehicles',       'Right-of-way at next intersection',
-                            'Priority road',                       'Yield',
-                            'Stop',                                'No vehicles',
-                            'Heavy vehicles prohibited',           'No entry',
-                            'General caution',                     'Dangerous curve to the left',
-                            'Dangerous curve to the right',        'Double curve',
-                            'Bumpy road',                          'Slippery road',
-                            'Road narrows on the right',           'Road work',
-                            'Traffic signals',                     'Pedestrians',
-                            'Children crossing',                   'Bicycles crossing',
-                            'Beware of ice/snow',                  'Wild animals crossing',
-                            'End of all speed and passing limits', 'Turn right ahead',
-                            'Turn left ahead',                     'Ahead only',
-                            'Go straight or right',                'Go straight or left',
-                            'Keep right',                          'Keep left',
-                            'Roundabout mandatory',                'End of no passing',
-                            'End of no passing by heavy vehicles'
+            classes = [ 'Speed limit (20km/h)',                'Speed limit (30km/h)',
+                        'Speed limit (50km/h)',                'Speed limit (60km/h)',
+                        'Speed limit (70km/h)',                'Speed limit (80km/h)',
+                        'End of speed limit (80km/h)',         'Speed limit (100km/h)',
+                        'Speed limit (120km/h)',               'No passing',
+                        'No passing for heavy vehicles',       'Right-of-way at next intersection',
+                        'Priority road',                       'Yield',
+                        'Stop',                                'No vehicles',
+                        'Heavy vehicles prohibited',           'No entry',
+                        'General caution',                     'Dangerous curve to the left',
+                        'Dangerous curve to the right',        'Double curve',
+                        'Bumpy road',                          'Slippery road',
+                        'Road narrows on the right',           'Road work',
+                        'Traffic signals',                     'Pedestrians',
+                        'Children crossing',                   'Bicycles crossing',
+                        'Beware of ice/snow',                  'Wild animals crossing',
+                        'End of all speed and passing limits', 'Turn right ahead',
+                        'Turn left ahead',                     'Ahead only',
+                        'Go straight or right',                'Go straight or left',
+                        'Keep right',                          'Keep left',
+                        'Roundabout mandatory',                'End of no passing',
+                        'End of no passing by heavy vehicles'
                          ]
             in_channels = 3
 
@@ -301,6 +314,10 @@ class Trainer(object):
                            train=False,
                            download=True,
                            transform=transform_test)
+        plot_set = builder(root=datadir,
+                           train=False,
+                           download=True,
+                           transform=transform_plot)
         # Create the corresponding DataLoaders
         self.train_loader = DataLoader(train_set,
                                        batch_size=batch_size,
@@ -310,7 +327,7 @@ class Trainer(object):
                                       batch_size=batch_size,
                                       shuffle=True,
                                       num_workers=num_workers)
-
+        self.plot_set = plot_set
         self.classes     = classes
         self.num_classes = len(classes)
         self.in_channels = in_channels
@@ -350,44 +367,6 @@ class Trainer(object):
         }, best_path)
 
 # ==============================================================================
-# ============================== VISUALIZATION =================================
-# ==============================================================================
-
-    def display_6items(self):
-        '''Displays 6 random items from the dataset'''
-        # Run the network through some examples
-        examples = list(enumerate(self.train_loader))
-        batch_idx, (example_data, example_targets) = random.choice(examples)
-
-        # Plot the items
-        self.plot(example_data,example_targets,"Ground Truth")
-
-    def display_6predictions(self):
-        '''Displays the output of running the network over 6 random inputs from the dataset'''
-        # Run the network through some examples
-        examples = list(enumerate(self.test_loader))
-        batch_idx, (example_data, example_targets) = random.choice(examples)
-        with torch.no_grad():
-            output = self.model(example_data)
-            predictions = []
-            for i in range(6):
-                pred_class = output.data.max(1, keepdim=True)[1][i].item()
-                predictions.append(self.classes[pred_class])
-        # Plot the predictions
-        self.plot(example_data,predictions,"Prediction")
-
-    def plot(self,data,labels,title):
-        fig = plt.figure()
-        for i in range(6):
-            plt.subplot(2,3,i+1)
-            plt.tight_layout()
-            plt.imshow(data[i][0], cmap='gray', interpolation='none')
-            plt.title("{}: {}".format(title,labels[i]))
-            plt.xticks([])
-            plt.yticks([])
-        plt.show()
-
-# ==============================================================================
 # ======================== TRAINING AND EVALUATION =============================
 # ==============================================================================
 
@@ -395,7 +374,7 @@ class Trainer(object):
         print("Training")
 
         if self.args.visualize:
-            self.display_6items()
+            self.plotter.display_items(5,10)
 
         # Training starts
         if self.args.detect_nan:
@@ -468,7 +447,7 @@ class Trainer(object):
         print("Evaluating")
 
         if self.args.visualize:
-            self.display_6predictions()
+            self.plotter.display_predictions(5,10)
 
         eval_meters = EvalEpochMeters()
 
