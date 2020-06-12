@@ -90,6 +90,10 @@ class Parser(argparse.ArgumentParser):
         # Dataset
         self.add_argument("--dataset", default="MNIST", help="Dataset to train on")
         self.add_argument("--visualize",action="store_true",help="Visualization of the items or predictions")
+        # Quantization
+        self.add_argument("--acq",default=32,type=int,help="Activation precision (bit-width)")
+        self.add_argument("--weq",default=32,type=int,help="Weight precision (bit-width)")
+        self.add_argument("--inq",default=32,type=int,help="Input precision (bit-width)")
 
     def parse(self,args):
         return self.parse_args(args)

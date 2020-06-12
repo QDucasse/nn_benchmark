@@ -85,13 +85,13 @@ class QuantLeNet5(nn.Module):
                               out_channels = n_classes)
         )
 
-        self.initialize_weights()
+        # self.initialize_weights()
         self.name = "QuantLeNet5"
 
-    def initialize_weights(self):
-        for m in self.modules():
-          if isinstance(m, qnn.QuantConv2d) or isinstance(m, qnn.QuantLinear):
-            torch.nn.init.uniform_(m.weight.data, -1, 1)
+    # def initialize_weights(self):
+    #     for m in self.modules():
+    #       if isinstance(m, qnn.QuantConv2d) or isinstance(m, qnn.QuantLinear):
+    #         torch.nn.init.uniform_(m.weight.data, -1, 1)
 
     def forward(self, x):
         x = self.feature_extractor(x)

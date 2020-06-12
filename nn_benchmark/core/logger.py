@@ -14,7 +14,7 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
-# Included in: 
+# Included in:
 # nn_benchmark
 # author - Quentin Ducasse
 # https://github.com/QDucasse

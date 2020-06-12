@@ -82,9 +82,13 @@ class Trainer(object):
         self.plot_set     = None
         self.init_dataset(args.dataset,args.datadir,args.batch_size,args.num_workers)
 
+        # Init starting values
+        self.starting_epoch = 1
+        self.best_val_acc = 0
+
         # Initialize the model
         self.model = None
-        self.init_model(args.network,args.resume)
+        self.init_model(args.network,args.resume,args.acq,args.weq,args.inq)
 
         # Initialize the output directory
         self.output_dir_path = './'
@@ -93,6 +97,7 @@ class Trainer(object):
         # Initialize the logger
         self.logger = None
         self.init_logger(args.dry_run,args.resume)
+        self.logger.info(args)
 
         # Initialize the plotter
         self.plotter = None
@@ -107,10 +112,6 @@ class Trainer(object):
         # Initialize the scheduler
         self.scheduler = None
         self.init_scheduler(args.scheduler,args.milestones,args.resume,args.evaluate)
-
-        # Init starting values
-        self.starting_epoch = 1
-        self.best_val_acc = 0
 
 
 # ==============================================================================
@@ -128,18 +129,26 @@ class Trainer(object):
             self.output_dir_path, _ = os.path.split(self.output_dir_path)
 
 
-    def init_model(self,network,resume):
+    def init_model(self,network, resume, act_bit_width, weight_bit_width, input_bit_width):
         '''Initializes the network architecture model'''
+        is_quantized = network.startswith("Quant")
         builder = networks[network]
-        self.model = builder(n_classes   = self.num_classes,
-                             in_channels = self.in_channels)
+        # Add the quantization parameters if the network is quantized
+        if is_quantized:
+            self.model = builder(n_classes        = self.num_classes,
+                                 in_channels      = self.in_channels,
+                                 act_bit_width    = act_bit_width,
+                                 weight_bit_width = weight_bit_width,
+                                 in_bit_width     = input_bit_width)
+        else:
+            self.model = builder(n_classes   = self.num_classes,
+                                 in_channels = self.in_channels)
 
         if resume:
             print('Loading model checkpoint at: {}'.format(resume))
             package = torch.load(resume, map_location='cpu')
             model_state_dict = package['state_dict']
             self.model.load_state_dict(model_state_dict)
-
 
     def init_logger(self,dry_run,resume):
         '''Initializes the logger with the correct output directory and specify
@@ -271,8 +280,7 @@ class Trainer(object):
         elif dataset == 'GTSRB':
             train_transforms_list = [ transforms.Resize((32, 32)),
                                       transforms.ToTensor(),
-                                      transforms.Normalize(
-                                         (0.1307,), (0.3081,))]
+                                      transforms.Normalize((0.1307,), (0.3081,))]
             transform_train = transforms.Compose(train_transforms_list)
             transform_test  = transform_train
             builder = GTSRB

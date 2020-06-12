@@ -6,18 +6,17 @@ This project consists of an utility wrapper around PyTorch and Brevitas to speci
 
 You can run the training of `LeNet` on the `MNIST` dataset as follows:
 ```bash
-PYTORCH_JIT=1 python nn_benchmark/main.py --network LeNet --dataset MNIST --epochs 3
+$ PYTORCH_JIT=1 python nn_benchmark/main.py --network LeNet --dataset MNIST --epochs 3
 ```
 The results can be observed under the experiments folder.
 
 You can then evaluate your network with the following command:
 ```bash
-python nn_benchmark/main.py --evaluate --resume ./experiments/<your_folder>/checkpoints/best.tar
+$ python nn_benchmark/main.py --network LeNet --dataset MNIST --evaluate --resume ./experiments/<your_folder>/checkpoints/best.tar
 ```
 ### Available networks and datasets
 
 The following networks are supported:
-- LeNet
 - LeNet5
 - VGG (11/13/16/19)
 - MobilenetV1
@@ -42,7 +41,7 @@ virtual environment, the installation proceeds as follows:
 
   ```bash
     $ cd <directory you want to install to>
-    $ git clone https://github.com/QDucasse/pyquickstart
+    $ git clone https://github.com/QDucasse/nn_benchmark
     $ python setup.py install
   ```
 * For downloading and installing the source code of the project in a new virtual environment:  
@@ -50,8 +49,8 @@ virtual environment, the installation proceeds as follows:
   *Download of the source code & Creation of the virtual environment*
   ```bash
     $ cd <directory you want to install to>
-    $ git clone https://github.com/QDucasse/pyquickstart
-    $ cd pyquickstart
+    $ git clone https://github.com/QDucasse/nn_benchmark
+    $ cd nn_benchmark
     $ mkvirtualenv -a . -r requirements.txt VIRTUALENV_NAME
   ```
   *Launch of the environment & installation of the project*
@@ -60,7 +59,7 @@ virtual environment, the installation proceeds as follows:
     $ pip install -e .
   ```
 
-Finally, whether you choose the first or second option, you will need brevitas if you want to use quantized networks. The installation is better performed from source and can be done as follows (in your native or virtual environment):
+Finally, whether you chose the first or second option, you will need brevitas if you want to use quantized networks. The installation is better performed from source and can be done as follows (in your native or virtual environment):
 
 ```bash
     $ git clone https://github.com/Xilinx/brevitas.git
@@ -71,17 +70,23 @@ Finally, whether you choose the first or second option, you will need brevitas i
 ### Structure of the project
 
 Quick presentation of the different modules of the project:
-* [**Package1:**][package]
-Dynamic systems models.
+* [**Core:**][core] Core functionalities of the project such as the `CLI`, `Logger`, `Plotter` and `Trainer`.
+* [**Extensions:**][extensions] Extended functionalities of the `PyTorch` modules. This package contains specific modules (e.g. `TensorNorm`), dataset (e.g. `GTSRB`) or loss functions (e.g. `SquaredHinge`) that can be used as drop-in replacements for their `PyTorch` homologues. 
+* [**Networks:**][networks] Network architectures implemented in the project that can be used with the CLI `--network` flag. If the suffix `Quant` is present, this means the network is quantized and the three following precisions can be specified: `weight_bit_width`, precision of the weights ; `act_bit_width` precision of the activation functions ; `in_bit_width`, input precision (this is useful to keep a higher precision at the beginning).
 ---
 ### Requirements
 
 This project uses the following external libraries:
-* [`Numpy`][dependency1]
+- [`numpy`](https://numpy.org/)
+- [`torch`](https://pytorch.org/)
+- [`torchvision`](https://pytorch.org/docs/stable/torchvision/index.html)
+- [`matplotlib`](https://matplotlib.org/)
+- [`brevitas`](https://xilinx.github.io/brevitas/)
 
 If installed as specified above, the requirements are stated in the ``requirements.txt`` file
 and therefore automatically installed.  
-However, you can install each of them separately with the command:
+However, you can install each of them separately with the command (except for `brevitas`, please follow the installation from source provided at the end of the installation paragraph):
+
 ```bash
   $ pip install <library>
 ```
@@ -89,7 +94,13 @@ However, you can install each of them separately with the command:
 ---
 ### Objectives and Milestones of the project
 
-- [X] Basic project structure
+- [x] Basic project structure
+- [x] `Trainer`/`Logger` logic
+- [x] `LeNet` network training on `MNIST`
+- [x] `LeNet5`, `MobilenetV1`, `VGG11`, `VGG13`, `VGG16`, `VGG19` network architectures
+- [x] Quantized counterparts for the networks
+- [x] `PyTorch` extensions with `GTSRB` dataset and another loss function (`SqrHinge`)
+- [x] Extend trainer with `Plotter`
 ---
 
 ### Testing
@@ -98,7 +109,7 @@ All tests are written to work with `nose` and/or `pytest`. Just type `pytest` or
 `nosetests` as a command line in the project. Every test file can still be launched
 by executing the testfile itself.
 ```bash
-  $ python pyquickstart/tests/chosentest.py
+  $ python nn_benchmark/tests/chosentest.py
   $ pytest
 ```
 
@@ -106,5 +117,8 @@ by executing the testfile itself.
 
 ### References
 
-[package]:https://github.com/QDucasse/pyquickstart/tree/master/pyquickstart/package
-[dependency1]: https://numpy.org/
+[core]:https://github.com/QDucasse/nn_benchmark/tree/master/nn_benchmark/core	"core package"
+[extensions]: https://github.com/QDucasse/nn_benchmark/tree/master/nn_benchmark/extensions	"extensions package"
+
+[networks]: https://github.com/QDucasse/nn_benchmark/tree/master/nn_benchmark/networks	"networks package"
+
