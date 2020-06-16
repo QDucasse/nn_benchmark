@@ -5,8 +5,11 @@
 # https://github.com/QDucasse
 # quentin.ducasse@ensta-bretagne.org
 
-from __future__ import absolute_import
+import unittest
 
-__all__ = ["test_ex1"]
+class PackageTestCase(unittest.TestCase):
+    def setUp(self):
+        pass
 
-from .test_ex1 import *
+    def test1(self):
+        pass

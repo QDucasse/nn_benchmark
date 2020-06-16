@@ -5,9 +5,11 @@
 # https://github.com/QDucasse
 # quentin.ducasse@ensta-bretagne.org
 
-import sys
-from nn_benchmark.core import CLI
+import unittest
 
-if __name__ == "__main__":
-    cli = CLI(sys.argv[1:])
-    cli.main()
+class PackageTestCase(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test1(self):
+        pass

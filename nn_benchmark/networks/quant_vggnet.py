@@ -52,7 +52,7 @@ class QuantVGG(nn.Module):
                                      padding=1,
                                      bit_width=in_bit_width),
                    nn.BatchNorm2d(64),
-                   make_quant_relu(bit_width=act_bit_width)]
+                   make_quant_tanh(bit_width=act_bit_width)]
         # Others steps:
         # If the item of the configuration is an 'M' --> MaxPool layer
         # Else --> Conv(out=item) => BatchNorm => ReLU
@@ -71,7 +71,7 @@ class QuantVGG(nn.Module):
                                              stride=1,
                                              bit_width=weight_bit_width),
                            nn.BatchNorm2d(out_channels),
-                           make_quant_relu(bit_width=act_bit_width)]
+                           make_quant_tanh(bit_width=act_bit_width)]
                 in_channels = out_channels
         layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
         return nn.Sequential(*layers)
@@ -83,18 +83,22 @@ class QuantVGG(nn.Module):
         return F.softmax(out,dim=1)
 
 
-def QuantVGG11(in_channels=3, n_classes=10):
+def QuantVGG11(in_channels=3, n_classes=10,weight_bit_width=2, act_bit_width=2, in_bit_width=8):
     '''QuantVGG11 configuration'''
-    return QuantVGG("QuantVGG11",in_channels=in_channels,n_classes=n_classes)
+    return QuantVGG("QuantVGG11",in_channels=in_channels,n_classes=n_classes,
+                    weight_bit_width=weight_bit_width, act_bit_width=act_bit_width, in_bit_width=in_bit_width)
 
-def QuantVGG13(in_channels=3, n_classes=10):
+def QuantVGG13(in_channels=3, n_classes=10,weight_bit_width=2, act_bit_width=2, in_bit_width=8):
     '''QuantVGG13 configuration'''
-    return QuantVGG("QuantVGG13",in_channels=in_channels,n_classes=n_classes)
+    return QuantVGG("QuantVGG13",in_channels=in_channels,n_classes=n_classes,
+                    weight_bit_width=weight_bit_width, act_bit_width=act_bit_width, in_bit_width=in_bit_width)
 
-def QuantVGG16(in_channels=3, n_classes=10):
+def QuantVGG16(in_channels=3, n_classes=10,weight_bit_width=2, act_bit_width=2, in_bit_width=8):
     '''QuantVGG16 configuration'''
-    return QuantVGG("QuantVGG16",in_channels=in_channels,n_classes=n_classes)
+    return QuantVGG("QuantVGG16",in_channels=in_channels,n_classes=n_classes,
+                    weight_bit_width=weight_bit_width, act_bit_width=act_bit_width, in_bit_width=in_bit_width)
 
-def QuantVGG19(in_channels=3, n_classes=10):
+def QuantVGG19(in_channels=3, n_classes=10,weight_bit_width=2, act_bit_width=2, in_bit_width=8):
     '''QuantVGG19 configuration'''
-    return QuantVGG("QuantVGG19",in_channels=in_channels,n_classes=n_classes)
+    return QuantVGG("QuantVGG19",in_channels=in_channels,n_classes=n_classes,
+                    weight_bit_width=weight_bit_width, act_bit_width=act_bit_width, in_bit_width=in_bit_width)

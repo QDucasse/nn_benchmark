@@ -16,11 +16,11 @@ from nn_benchmark.networks.quant_utils import get_quant_type
 # Global quantization
 SCALING_MIN_VAL   = 2e-16
 ENABLE_BIAS_QUANT = False
-MIN_OVERALL_BW = 1
-MAX_OVERALL_BW = 8
+MIN_OVERALL_BW = 2
+MAX_OVERALL_BW = None
 
 # Activation function quantization
-ACT_SCALING_IMPL_TYPE               = ScalingImplType.CONST
+ACT_SCALING_IMPL_TYPE               = ScalingImplType.PARAMETER
 ACT_SCALING_PER_CHANNEL             = False
 ACT_SCALING_RESTRICT_SCALING_TYPE   = RestrictValueType.LOG_FP
 ACT_MAX_VAL                         = 6.0

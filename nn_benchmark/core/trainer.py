@@ -34,6 +34,8 @@ import torch.optim         as optim
 import torch.nn.functional as F
 import matplotlib.pyplot   as plt
 
+import brevitas.onnx as bo
+
 from torch                    import nn
 from torch.utils.data         import DataLoader
 from torch.optim.lr_scheduler import MultiStepLR
@@ -88,6 +90,9 @@ class Trainer(object):
 
         # Initialize the model
         self.model = None
+        self.act_bit_width    = None
+        self.weight_bit_width = None
+        self.input_bit_width  = None
         self.init_model(args.network,args.resume,args.acq,args.weq,args.inq)
 
         # Initialize the output directory
@@ -133,6 +138,9 @@ class Trainer(object):
         '''Initializes the network architecture model'''
         is_quantized = network.startswith("Quant")
         builder = networks[network]
+        self.act_bit_width    = act_bit_width
+        self.weight_bit_width = weight_bit_width
+        self.input_bit_width  = input_bit_width
         # Add the quantization parameters if the network is quantized
         if is_quantized:
             self.model = builder(n_classes        = self.num_classes,
@@ -374,6 +382,13 @@ class Trainer(object):
             'best_val_acc': self.best_val_acc,
         }, best_path)
 
+    def export_onnx(self):
+        model_act_bit_width    = "A" + str(self.act_bit_width)
+        model_weight_bit_width = "W" + str(self.weight_bit_width)
+        model_input_bit_width  = "I" + str(self.input_bit_width)
+        model_name_with_attr   = "_".join([self.model.name,model_act_bit_width,model_weight_bit_width,model_input_bit_width])
+        bo.export_finn_onnx(self.model, (1, self.in_channels, 32, 32), self.output_dir_path +"/"+ self.model.name + ".onnx")
+
 # ==============================================================================
 # ======================== TRAINING AND EVALUATION =============================
 # ==============================================================================
@@ -506,3 +521,24 @@ class Trainer(object):
 
         print("Top 1 average: " + str(eval_meters.top1.avg))
         return eval_meters.top1.avg
+
+
+
+if __name__ == "__main__":
+    from nn_benchmark.core import ObjDict
+    acq = 4
+    weq = 4
+    inq = 8
+    model = "QuantVGG13"
+    dataset = "GTSRB"
+    args = {'datadir': './data/', 'experiments': './experiments', 'dry_run': True,
+            'log_freq': 10, 'evaluate': False, 'resume': None, 'detect_nan': False,
+            'num_workers': 4, 'gpus': '0', 'batch_size': 100, 'lr': 0.01, 'optim': 'ADAM',
+            'loss': 'CrossEntropy', 'scheduler': 'FIXED', 'milestones': '100,150,200,250',
+            'momentum': 0.9, 'weight_decay': 0, 'epochs': 2, 'random_seed': 1,
+            'network': model, 'pretrained': False, 'dataset': dataset,
+            'visualize': False, 'acq': acq, 'weq': weq, 'inq': inq, 'onnx': True}
+    args = ObjDict(args)
+    trainer = Trainer(args)
+    # trainer.train_model()
+    trainer.export_onnx()

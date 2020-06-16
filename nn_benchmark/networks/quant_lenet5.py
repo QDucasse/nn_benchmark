@@ -45,11 +45,11 @@ class QuantLeNet5(nn.Module):
                               padding      = CNV_PADDING,
                               groups       = CNV_GROUPS),
             make_quant_tanh(act_bit_width,
-                            return_quant_tensor=False),
-            # make_quant_avg_pool(bit_width   = weight_bit_width,
-            #                     kernel_size = POOL_SIZE,
-            #                     stride      = POOL_STRIDE),
-            nn.AvgPool2d(kernel_size=POOL_SIZE,stride=POOL_STRIDE),
+                            return_quant_tensor=True),
+            make_quant_avg_pool(bit_width   = max(2,weight_bit_width),
+                                kernel_size = POOL_SIZE,
+                                stride      = POOL_STRIDE),
+            # nn.AvgPool2d(kernel_size=POOL_SIZE,stride=POOL_STRIDE),
             # Second sequence: CONV => RELU => AVGPOOL
             make_quant_conv2d(bit_width    = weight_bit_width,
                               in_channels  = CNV_OUT_CH[0],
@@ -59,11 +59,11 @@ class QuantLeNet5(nn.Module):
                               padding      = CNV_PADDING,
                               groups       = CNV_GROUPS),
             make_quant_tanh(bit_width=act_bit_width,
-                            return_quant_tensor=False),
-            # make_quant_avg_pool(bit_width   = weight_bit_width,
-            #                     kernel_size = POOL_SIZE,
-            #                     stride      = POOL_STRIDE),
-            nn.AvgPool2d(kernel_size=POOL_SIZE,stride=POOL_STRIDE),
+                            return_quant_tensor=True),
+            make_quant_avg_pool(bit_width   = max(2,weight_bit_width),
+                                kernel_size = POOL_SIZE,
+                                stride      = POOL_STRIDE),
+            # nn.AvgPool2d(kernel_size=POOL_SIZE,stride=POOL_STRIDE),
             # Third sequence: CONV => RELU
             make_quant_conv2d(bit_width    = weight_bit_width,
                               in_channels  = CNV_OUT_CH[1],
@@ -85,17 +85,18 @@ class QuantLeNet5(nn.Module):
                               out_channels = n_classes)
         )
 
+        # Use if Binary
         # self.initialize_weights()
         self.name = "QuantLeNet5"
 
+    # Use if Binary and Bipolar
     # def initialize_weights(self):
     #     for m in self.modules():
     #       if isinstance(m, qnn.QuantConv2d) or isinstance(m, qnn.QuantLinear):
     #         torch.nn.init.uniform_(m.weight.data, -1, 1)
 
     def forward(self, x):
-        x = self.feature_extractor(x)
-        x = torch.flatten(x, 1)
-        logits = self.classifier(x)
-        probs = F.softmax(logits, dim=1)
-        return probs
+        out = self.feature_extractor(x)
+        out = torch.flatten(out, 1)
+        out = self.classifier(out)
+        return F.softmax(out, dim=1)

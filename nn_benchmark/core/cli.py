@@ -94,6 +94,8 @@ class Parser(argparse.ArgumentParser):
         self.add_argument("--acq",default=32,type=int,help="Activation precision (bit-width)")
         self.add_argument("--weq",default=32,type=int,help="Weight precision (bit-width)")
         self.add_argument("--inq",default=32,type=int,help="Input precision (bit-width)")
+        # Export as ONNX
+        self.add_argument("--onnx",action="store_true",help="Export final model as ONNX")
 
     def parse(self,args):
         return self.parse_args(args)
@@ -139,5 +141,9 @@ class CLI(object):
         if self.args.evaluate:
             with torch.no_grad():
                 self.trainer.eval_model()
+                if self.args.onnx:
+                    self.trainer.export_onnx()
         else:
             self.trainer.train_model()
+            if self.args.onnx:
+                self.trainer.export_onnx()

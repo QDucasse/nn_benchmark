@@ -37,7 +37,12 @@ class LeNet5(nn.Module):
         self.name = "LeNet5"
 
     def forward(self, x):
-        out  = self.feature_extractor(x)
+        out = self.feature_extractor(x)
         out = torch.flatten(out, 1)
         out = self.classifier(out)
         return F.softmax(out, dim=1)
+
+if __name__ == "__main__":
+    mod = LeNet5(in_channels=3)
+    x = torch.ones([100, 3, 32, 32], dtype=torch.float32)
+    out = mod.feature_extractor(x)
