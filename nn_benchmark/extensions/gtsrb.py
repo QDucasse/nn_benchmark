@@ -79,7 +79,7 @@ class GTSRB(ImageFolder):
                                ' You can use download=True to download it')
 
         if train:
-            super(GTSRB, self).__init__(self.root+'/GTSRB/train/', transform=transform,
+            super(GTSRB, self).__init__(root+'/GTSRB/train/', transform=transform,
                                         target_transform=target_transform)
         else:
             super(GTSRB, self).__init__(root+'/GTSRB/test', transform=transform,
@@ -88,6 +88,7 @@ class GTSRB(ImageFolder):
 
     @property
     def train_folder(self):
+        print(os.path.join(self.root, self.__class__.__name__, 'train'))
         return os.path.join(self.root, self.__class__.__name__, 'train')
 
     @property
@@ -106,14 +107,21 @@ class GTSRB(ImageFolder):
     def archive_csv(self):
         return os.path.join(self.root, self.__class__.__name__, 'archive_csv')
 
-
     # @property
     # def class_to_idx(self):
     #     return {_class: i for i, _class in enumerate(self.classes)}
 
     def _check_exists(self):
-        return (os.path.exists(self.train_folder) and
-                os.path.exists(self.test_folder))
+        res = (os.path.exists(self.train_folder) and os.path.exists(self.test_folder))
+        if not res:
+            return False
+
+        for i in range(43):
+            train_class_folder = os.path.join(self.train_folder,str(i).zfill(5))
+            res = res and os.path.exists(train_class_folder)
+            test_class_folder = os.path.join(self.test_folder,str(i).zfill(5))
+            res = res and os.path.exists(test_class_folder)
+        return res
 
     def download(self):
         """Download the GTSRB data if it doesn't exist already."""

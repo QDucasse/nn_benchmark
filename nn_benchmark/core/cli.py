@@ -100,7 +100,6 @@ class Parser(argparse.ArgumentParser):
     def parse(self,args):
         return self.parse_args(args)
 
-
 class ObjDict(dict):
     def __getattr__(self, name):
         if name in self:
@@ -116,8 +115,6 @@ class ObjDict(dict):
             del self[name]
         else:
             raise AttributeError("No such attribute: " + name)
-
-
 
 class CLI(object):
     '''Command Line Interface holding the trainer and parser and connecting the two'''

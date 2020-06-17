@@ -383,11 +383,14 @@ class Trainer(object):
         }, best_path)
 
     def export_onnx(self):
-        model_act_bit_width    = "A" + str(self.act_bit_width)
-        model_weight_bit_width = "W" + str(self.weight_bit_width)
-        model_input_bit_width  = "I" + str(self.input_bit_width)
-        model_name_with_attr   = "_".join([self.model.name,model_act_bit_width,model_weight_bit_width,model_input_bit_width])
-        bo.export_finn_onnx(self.model, (1, self.in_channels, 32, 32), self.output_dir_path +"/"+ self.model.name + ".onnx")
+        if self.model.name.startswith("Quant"):
+            model_act_bit_width    = "A" + str(self.act_bit_width)
+            model_weight_bit_width = "W" + str(self.weight_bit_width)
+            model_input_bit_width  = "I" + str(self.input_bit_width)
+            model_name_with_attr   = "_".join([self.model.name,model_act_bit_width,model_weight_bit_width,model_input_bit_width])
+            bo.export_finn_onnx(self.model, (1, self.in_channels, 32, 32), self.output_dir_path +"/"+ model_name_with_attr + ".onnx")
+        else:
+            torch.onnx.export(self.model, (1, self.in_channels, 32, 32), self.output_dir_path +"/"+ self.model.name + ".onnx")
 
 # ==============================================================================
 # ======================== TRAINING AND EVALUATION =============================
@@ -529,9 +532,9 @@ if __name__ == "__main__":
     acq = 4
     weq = 4
     inq = 8
-    model = "QuantVGG13"
+    model = "QuantVGG11"
     dataset = "GTSRB"
-    args = {'datadir': './data/', 'experiments': './experiments', 'dry_run': True,
+    args = {'datadir': './data/', 'experiments': './experiments', 'dry_run': False,
             'log_freq': 10, 'evaluate': False, 'resume': None, 'detect_nan': False,
             'num_workers': 4, 'gpus': '0', 'batch_size': 100, 'lr': 0.01, 'optim': 'ADAM',
             'loss': 'CrossEntropy', 'scheduler': 'FIXED', 'milestones': '100,150,200,250',

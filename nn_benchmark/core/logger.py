@@ -42,6 +42,11 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
+    def __eq__(self,avg_meter):
+        return ((self.val == avg_meter.val) and
+                (self.sum == avg_meter.sum) and
+                (self.avg == avg_meter.avg) and
+                (self.count == avg_meter.count))
 
 class TrainingEpochMeters(object):
     '''Holder of the different training meters:
@@ -95,7 +100,7 @@ class Logger(object):
             self.log.propagate = False
 
     def info(self, arg):
-        '''Log the argument'''
+        '''Log the argument in the different handlers'''
         self.log.info(arg)
 
     def training_batch_cli_log(self, epoch_meters, epoch, batch, tot_batches):

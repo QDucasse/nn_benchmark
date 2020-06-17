@@ -38,7 +38,7 @@ class LeNet5(nn.Module):
 
     def forward(self, x):
         out = self.feature_extractor(x)
-        out = torch.flatten(out, 1)
+        out = out.view(out.size(0), -1)
         out = self.classifier(out)
         return F.softmax(out, dim=1)
 

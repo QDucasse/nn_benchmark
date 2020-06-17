@@ -34,7 +34,7 @@ class QuantVGG(nn.Module):
                                           weight_bit_width=weight_bit_width,
                                           act_bit_width=act_bit_width,
                                           in_bit_width=in_bit_width)
-        self.classifier = nn.Linear(512, n_classes)
+        self.classifier = make_quant_linear(in_channels=512, out_channels=n_classes, bit_width=weight_bit_width)
         self.name = vgg_name
 
     def _make_layers(self, cfg, in_channels,

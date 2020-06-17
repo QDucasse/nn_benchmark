@@ -44,7 +44,7 @@ class QuantLeNet5(nn.Module):
                               stride       = CNV_STRIDE,
                               padding      = CNV_PADDING,
                               groups       = CNV_GROUPS),
-            make_quant_tanh(act_bit_width,
+            make_quant_tanh(bit_width=act_bit_width,
                             return_quant_tensor=True),
             make_quant_avg_pool(bit_width   = max(2,weight_bit_width),
                                 kernel_size = POOL_SIZE,
@@ -72,7 +72,7 @@ class QuantLeNet5(nn.Module):
                               stride       = CNV_STRIDE,
                               padding      = CNV_PADDING,
                               groups       = CNV_GROUPS),
-            make_quant_tanh(act_bit_width)
+            make_quant_tanh(bit_width=act_bit_width)
         )
 
         self.classifier = nn.Sequential(
@@ -97,6 +97,6 @@ class QuantLeNet5(nn.Module):
 
     def forward(self, x):
         out = self.feature_extractor(x)
-        out = torch.flatten(out, 1)
+        out = out.view(out.size(0), -1)
         out = self.classifier(out)
         return F.softmax(out, dim=1)
