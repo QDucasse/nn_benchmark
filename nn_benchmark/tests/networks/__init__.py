@@ -17,3 +17,4 @@ from .test_mobilenetv1       import *
 from .test_quant_mobilenetv1 import *
 from .test_vggnet            import *
 from .test_quant_vggnet      import *
+from .test_common            import *

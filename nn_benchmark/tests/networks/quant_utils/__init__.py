@@ -7,8 +7,8 @@
 
 from __future__ import absolute_import
 
-__all__ = ["test_common","test_quant_activations","test_quant_layers"]
+__all__ = ["test_quant_common","test_quant_activations","test_quant_layers"]
 
-from .test_common            import *
+from .test_quant_common      import *
 from .test_quant_activations import *
 from .test_quant_layers      import *

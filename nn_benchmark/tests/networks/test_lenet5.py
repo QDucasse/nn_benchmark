@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from nn_benchmark.networks        import LeNet5
 from nn_benchmark.networks.common import *
 
-import nn_benchmark.tests.networks.test_utils as util
+import nn_benchmark.tests.networks.test_common as util
 
 class LeNet5TestCase(unittest.TestCase):
     def setUp(self):

@@ -88,7 +88,6 @@ class GTSRB(ImageFolder):
 
     @property
     def train_folder(self):
-        print(os.path.join(self.root, self.__class__.__name__, 'train'))
         return os.path.join(self.root, self.__class__.__name__, 'train')
 
     @property

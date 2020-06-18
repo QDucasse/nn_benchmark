@@ -532,7 +532,7 @@ if __name__ == "__main__":
     acq = 4
     weq = 4
     inq = 8
-    model = "QuantVGG11"
+    model = "QuantMobilenetV1"
     dataset = "GTSRB"
     args = {'datadir': './data/', 'experiments': './experiments', 'dry_run': False,
             'log_freq': 10, 'evaluate': False, 'resume': None, 'detect_nan': False,
