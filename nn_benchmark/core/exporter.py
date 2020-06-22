@@ -44,8 +44,14 @@ class Exporter(object):
                             input_t=input_tensor)
 
 if __name__ == "__main__":
-    from finn.util.test import get_test_model_trained
-    export_path = 'tests/mobilenet.onnx'
-    mobilenet = get_test_model_trained("mobilenet", 4, 4)
-    input_tensor = torch.ones([1,3,224,224],dtype=torch.float32)
-    bo.export_finn_onnx(mobilenet, (1, 3, 224, 224), export_path, input_t=input_tensor, torch_onnx_kwargs={'enable_onnx_checker':False})
+    # from finn.util.test import get_test_model_trained
+    # export_path = 'tests/mobilenet.onnx'
+    # mobilenet = get_test_model_trained("mobilenet", 4, 4)
+    # input_tensor = torch.ones([1,3,224,224],dtype=torch.float32)
+    # bo.export_finn_onnx(mobilenet, (1, 3, 224, 224), export_path, input_t=input_tensor)
+
+    from nn_benchmark.networks import QuantTFC
+    export_path = 'tests/QuantTFC.onnx'
+    input_tensor = torch.ones([1,3,32,32],dtype=torch.float32)
+    tfc = QuantTFC()
+    bo.export_finn_onnx(tfc, (1, 3, 32, 32), export_path, input_t=input_tensor)
