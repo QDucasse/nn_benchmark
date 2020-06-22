@@ -43,7 +43,7 @@ from torchvision              import transforms
 from torchvision.datasets     import MNIST, CIFAR10, FashionMNIST
 
 from nn_benchmark.networks    import LeNet, LeNet5, VGG11, VGG13, VGG16, VGG19, MobilenetV1
-from nn_benchmark.networks    import QuantLeNet5, QuantCNV, QuantMobilenetV1, QuantVGG11, QuantVGG13, QuantVGG16, QuantVGG19
+from nn_benchmark.networks    import QuantLeNet5, QuantCNV, QuantTFC, QuantMobilenetV1, QuantVGG11, QuantVGG13, QuantVGG16, QuantVGG19
 
 from nn_benchmark.extensions    import SqrHingeLoss, GTSRB
 from nn_benchmark.core.logger   import Logger, TrainingEpochMeters, EvalEpochMeters
@@ -54,6 +54,7 @@ networks = {"LeNet": LeNet,
             "LeNet5": LeNet5,
             "QuantLeNet5": QuantLeNet5,
             "QuantCNV": QuantCNV,
+            "QuantTFC": QuantTFC,
             "VGG11": VGG11,
             "VGG13": VGG13,
             "VGG16": VGG16,
@@ -526,10 +527,10 @@ class Trainer(object):
 
 if __name__ == "__main__":
     from nn_benchmark.core import ObjDict
-    acq = 4
-    weq = 4
+    acq = 2
+    weq = 2
     inq = 8
-    model = "QuantMobilenetV1"
+    model = "QuantCNV"
     dataset = "GTSRB"
     args = {'datadir': './data/', 'experiments': './experiments', 'dry_run': False,
             'log_freq': 10, 'evaluate': False, 'resume': None, 'detect_nan': False,
@@ -540,5 +541,5 @@ if __name__ == "__main__":
             'visualize': False, 'acq': acq, 'weq': weq, 'inq': inq, 'onnx': True}
     args = ObjDict(args)
     trainer = Trainer(args)
-    # trainer.train_model()
+    trainer.train_model()
     trainer.export_onnx()
