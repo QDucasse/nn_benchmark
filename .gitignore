@@ -128,8 +128,8 @@ Thumbs.db
 *.sqlite
 
 # README for data and experiments
-experiments/
-data/
+experiments/*
+data/*
 !experiments/README.md
 !data/README.md
 *.onnx
