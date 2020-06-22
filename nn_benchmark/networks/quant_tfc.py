@@ -49,41 +49,46 @@ HIDDEN_DROPOUT = 0.2
 
 class QuantTFC(nn.Module):
 
-    def __init__(self, num_classes=10, weight_bit_width=2, act_bit_width=2,
-                 in_bit_width=8, in_ch=3, in_features=(32, 32)):
+    def __init__(self, n_classes=10, weight_bit_width=2, act_bit_width=2,
+                 in_bit_width=8, in_channels=3, in_features=(32, 32)):
         super(QuantTFC, self).__init__()
 
-        self.features =nn.ModuleList()
-        self.features.append(make_hardtanh(in_bit_width))
+        self.features = nn.ModuleList()
+        self.features.append(make_quant_hard_tanh(in_bit_width))
         self.features.append(nn.Dropout(p=IN_DROPOUT))
-        in_features = reduce(mul, in_features)
+        in_features = reduce(mul, in_features) * in_channels
         for out_features in FC_OUT_FEATURES:
-            self.features.append(make_quant_linear(in_features=in_features,
-                                                   out_features=out_features,
-                                                   per_out_ch_scaling=INTERMEDIATE_FC_PER_OUT_CH_SCALING,
+            self.features.append(make_quant_linear(in_channels=in_features,
+                                                   out_channels=out_features,
+                                                   weight_scaling_per_output_channel=INTERMEDIATE_FC_PER_OUT_CH_SCALING,
                                                    bit_width=weight_bit_width))
             in_features = out_features
             self.features.append(nn.BatchNorm1d(num_features=in_features))
-            self.features.append(make_hardtanh(act_bit_width))
+            self.features.append(make_quant_hard_tanh(act_bit_width))
             self.features.append(nn.Dropout(p=HIDDEN_DROPOUT))
-        self.features.append(get_quant_linear(in_features=in_features,
-                                              out_features=num_classes,
-                                              per_out_ch_scaling=LAST_FC_PER_OUT_CH_SCALING,
-                                              bit_width=weight_bit_width))
-        self.features.append(nn.BatchNorm1d(num_features=num_classes))
+        self.features.append(make_quant_linear(in_channels=in_features,
+                                               out_channels=n_classes,
+                                               weight_scaling_per_output_channel=LAST_FC_PER_OUT_CH_SCALING,
+                                               bit_width=weight_bit_width))
+        self.features.append(nn.BatchNorm1d(num_features=n_classes))
 
-        for m in self.modules():
-          if isinstance(m, nn.QuantLinear):
-            torch.nn.init.uniform_(m.weight.data, -1, 1)
+        self.name = "QuantTFC"
 
-    def clip_weights(self, min_val, max_val):
-        for mod in self.features:
-            if isinstance(mod, bnn.QuantLinear):
-                mod.weight.data.clamp_(min_val, max_val)
+        # In case of binary activations and weights
+        # for m in self.modules():
+        #   if isinstance(m, bnn.QuantLinear):
+        #     torch.nn.init.uniform_(m.weight.data, -1, 1)
+
+    # In case of binary activations and weights
+    # def clip_weights(self, min_val, max_val):
+    #     for mod in self.features:
+    #         if isinstance(mod, bnn.QuantLinear):
+    #             mod.weight.data.clamp_(min_val, max_val)
 
     def forward(self, x):
         out = x.view(x.shape[0], -1)
-        out = 2.0 * out - torch.tensor([1.0], device=out.device)
+        # In case of binary activations and weights
+        # out = 2.0 * out - torch.tensor([1.0], device=out.device)
         for mod in self.features:
             out = mod(out)
         return x

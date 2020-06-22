@@ -50,8 +50,11 @@ if __name__ == "__main__":
     # input_tensor = torch.ones([1,3,224,224],dtype=torch.float32)
     # bo.export_finn_onnx(mobilenet, (1, 3, 224, 224), export_path, input_t=input_tensor)
 
-    from nn_benchmark.networks import QuantTFC
-    export_path = 'tests/QuantTFC.onnx'
-    input_tensor = torch.ones([1,3,32,32],dtype=torch.float32)
+    from nn_benchmark.networks import QuantTFC, QuantCNV
+    export_path_tfc = 'tests/QuantTFC.onnx'
+    export_path_cnv = 'tests/QuantCNV.onnx'
+    input_tensor = torch.ones([1,1,32,32],dtype=torch.float32)
     tfc = QuantTFC()
-    bo.export_finn_onnx(tfc, (1, 3, 32, 32), export_path, input_t=input_tensor)
+    cnv = QuantCNV()
+    bo.export_finn_onnx(tfc, (1,3,32,32), export_path_tfc, input_t = input_tensor)
+    bo.export_finn_onnx(cnv, (1,3,32,32), export_path_cnv)
