@@ -34,6 +34,11 @@ class LeNet(nn.Module):
 
     def forward(self, x):
         out = self.feature_extractor(x)
-        out = torch.flatten(out,1)
-        out = self.classifier(x)
+        out = out.view(out.size(0), -1)
+        out = self.classifier(out)
         return F.softmax(out, dim=1)
+
+if __name__ == "__main__":
+    mod = LeNet(in_channels=3)
+    x = torch.ones([1, 3, 32, 32], dtype=torch.float32)
+    torch.onnx.export(mod, x, "tests/networks/export/"+ mod.name + ".onnx")

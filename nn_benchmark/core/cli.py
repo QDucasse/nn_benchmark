@@ -139,8 +139,8 @@ class CLI(object):
             with torch.no_grad():
                 self.trainer.eval_model()
                 if self.args.onnx:
-                    self.trainer.export_onnx()
+                    self.trainer.exporter.export_onnx()
         else:
             self.trainer.train_model()
             if self.args.onnx:
-                self.trainer.export_onnx()
+                self.trainer.exporter.export_onnx()

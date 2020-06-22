@@ -45,9 +45,10 @@ from torchvision.datasets     import MNIST, CIFAR10, FashionMNIST
 from nn_benchmark.networks    import LeNet, LeNet5, VGG11, VGG13, VGG16, VGG19, MobilenetV1
 from nn_benchmark.networks    import QuantLeNet5, QuantCNV, QuantMobilenetV1, QuantVGG11, QuantVGG13, QuantVGG16, QuantVGG19
 
-from nn_benchmark.extensions   import SqrHingeLoss, GTSRB
-from nn_benchmark.core.logger  import Logger, TrainingEpochMeters, EvalEpochMeters
-from nn_benchmark.core.plotter import Plotter
+from nn_benchmark.extensions    import SqrHingeLoss, GTSRB
+from nn_benchmark.core.logger   import Logger, TrainingEpochMeters, EvalEpochMeters
+from nn_benchmark.core.plotter  import Plotter
+from nn_benchmark.core.exporter import Exporter
 
 networks = {"LeNet": LeNet,
             "LeNet5": LeNet5,
@@ -98,6 +99,9 @@ class Trainer(object):
         # Initialize the output directory
         self.output_dir_path = './'
         self.init_output(args.resume)
+
+        # Initialize the ONNX exporter
+        self.exporter = Exporter()
 
         # Initialize the logger
         self.logger = None
@@ -174,18 +178,15 @@ class Trainer(object):
            trained model'''
         self.plotter = Plotter(plot_set, model, classes)
 
-
     def init_randomness(self,seed):
         '''Set the random seed for PyTorch'''
         random.seed(seed)
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
-
     def init_device(self):
         '''Initializes the device (CPU or GPUs)'''
         self.device = "cpu"
-
 
     def init_optim(self,optimizer,resume,evaluate):
         '''Initializes the optimizer. Add an optimizer in the if checks.'''
@@ -225,7 +226,6 @@ class Trainer(object):
         else:
             raise Exception("Unrecognized loss function {}".format(loss))
 
-
     def init_scheduler(self,scheduler,milestones,resume,evaluate):
         '''Initializes the scheduler'''
         # STEP scheduler, will modify the learning rate when the epoch correspond to the <milestones>
@@ -242,7 +242,6 @@ class Trainer(object):
 
         if resume and not evaluate and self.scheduler is not None:
             self.scheduler.last_epoch = package['epoch'] - 1
-
 
     def init_dataset(self,dataset,datadir,batch_size,num_workers):
         '''Initializes the dataset chosen. Add your dataset in the if checks'''
@@ -317,7 +316,6 @@ class Trainer(object):
                          ]
             in_channels = 3
 
-
         else:
             raise Exception("Dataset not supported: {}".format(dataset))
 
@@ -382,15 +380,14 @@ class Trainer(object):
             'best_val_acc': self.best_val_acc,
         }, best_path)
 
-    def export_onnx(self):
-        if self.model.name.startswith("Quant"):
-            model_act_bit_width    = "A" + str(self.act_bit_width)
-            model_weight_bit_width = "W" + str(self.weight_bit_width)
-            model_input_bit_width  = "I" + str(self.input_bit_width)
-            model_name_with_attr   = "_".join([self.model.name,model_act_bit_width,model_weight_bit_width,model_input_bit_width])
-            bo.export_finn_onnx(self.model, (1, self.in_channels, 32, 32), self.output_dir_path +"/"+ model_name_with_attr + ".onnx")
-        else:
-            torch.onnx.export(self.model, (1, self.in_channels, 32, 32), self.output_dir_path +"/"+ self.model.name + ".onnx")
+    def export_onnx(self, input_tensor=None, torch_onnx_kwargs={}):
+        '''Export the model in ONNX format. A different export is provided is the
+           network is a quantized one because the quantizations need to be stored as
+           specific ONNX attributes'''
+        self.exporter.export_onnx(self.model, self.output_dir_path,
+                                  self.act_bit_width, self.weight_bit_width,
+                                  self.input_bit_width, self.in_channels,
+                                  input_tensor=input_tensor, torch_onnx_kwargs=torch_onnx_kwargs)
 
 # ==============================================================================
 # ======================== TRAINING AND EVALUATION =============================
