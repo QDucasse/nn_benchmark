@@ -11,6 +11,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
 
 class LeNet5(nn.Module):
     '''LeNet5 architecture in PyTorch'''
@@ -44,5 +45,5 @@ class LeNet5(nn.Module):
 
 if __name__ == "__main__":
     mod = LeNet5(in_channels=3)
-    x = torch.ones([100, 3, 32, 32], dtype=torch.float32)
-    out = mod.feature_extractor(x)
+    x = torch.ones([1, 3, 32, 32], dtype=torch.float32)
+    torch.onnx.export(mod, x, "tests/networks/export/"+ mod.name + ".onnx")

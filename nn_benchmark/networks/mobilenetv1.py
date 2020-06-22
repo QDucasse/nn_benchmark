@@ -11,6 +11,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
 
 class DWConvPWConv(nn.Module):
     '''Depthwise conv + Pointwise conv'''
@@ -69,4 +70,10 @@ class MobilenetV1(nn.Module):
         out = self.feature_extractor(x)
         out = out.view(out.size(0), -1)
         out = self.classifier(out)
-        return F.softmax(out,dim=1)
+        return F.softmax(out, dim=1)
+
+if __name__ == "__main__":
+    mod = MobilenetV1(in_channels=3)
+    x = torch.ones([1, 3, 32, 32], dtype=torch.float32)
+    out = mod.forward(x)
+    torch.onnx.export(mod, x, "tests/networks/export/"+ mod.name + ".onnx")

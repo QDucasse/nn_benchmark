@@ -67,3 +67,11 @@ def VGG16(in_channels=3, n_classes=10):
 def VGG19(in_channels=3, n_classes=10):
     '''VGG19 configuration'''
     return VGG("VGG19",in_channels=in_channels,n_classes=n_classes)
+
+
+if __name__ == "__main__":
+    models = [VGG11, VGG13, VGG16, VGG19]
+    for model in models:
+        mod = model(in_channels=3)
+        x = torch.ones([1, 3, 32, 32], dtype=torch.float32)
+        torch.onnx.export(mod, x, "tests/networks/export/"+ mod.name + ".onnx")
