@@ -132,3 +132,4 @@ experiments/
 data/
 !experiments/README.md
 !data/README.md
+*.onnx
