@@ -15,7 +15,7 @@ from torch.autograd import Variable
 
 class LeNet5(nn.Module):
     '''LeNet5 architecture in PyTorch'''
-    def __init__(self, n_classes=10, in_channels=1):
+    def __init__(self, n_classes=10, in_channels=3):
         super(LeNet5, self).__init__()
 
         self.feature_extractor = nn.Sequential(
