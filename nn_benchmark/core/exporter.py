@@ -50,11 +50,20 @@ if __name__ == "__main__":
     # input_tensor = torch.ones([1,3,224,224],dtype=torch.float32)
     # bo.export_finn_onnx(mobilenet, (1, 3, 224, 224), export_path, input_t=input_tensor)
 
-    from nn_benchmark.networks import QuantTFC, QuantCNV
-    export_path_tfc = 'tests/QuantTFC.onnx'
-    export_path_cnv = 'tests/QuantCNV.onnx'
+    from nn_benchmark.networks import QuantTFC, QuantCNV, QuantMobilenetV1, QuantLeNet5, QuantVGG11
+    export_path_tfc       = 'tests/QuantTFC.onnx'
+    export_path_cnv       = 'tests/QuantCNV.onnx'
+    export_path_mobilenet = 'tests/QuantMobilenet.onnx'
+    export_path_lenet5    = 'tests/QuantLeNet5.onnx'
+    export_path_vgg11     = 'tests/QuantVGG11.onnx'
     input_tensor = torch.ones([1,1,32,32],dtype=torch.float32)
-    tfc = QuantTFC()
-    cnv = QuantCNV()
-    bo.export_finn_onnx(tfc, (1,3,32,32), export_path_tfc, input_t = input_tensor)
+    tfc       = QuantTFC()
+    cnv       = QuantCNV()
+    mobilenet = QuantMobilenetV1()
+    lenet5    = QuantLeNet5()
+    vgg11     = QuantVGG11()
+    bo.export_finn_onnx(tfc, (1,3,32,32), export_path_tfc)
     bo.export_finn_onnx(cnv, (1,3,32,32), export_path_cnv)
+    bo.export_finn_onnx(mobilenet, (1,3,32,32), export_path_mobilenet)
+    bo.export_finn_onnx(lenet5, (1,3,32,32), export_path_lenet5)
+    bo.export_finn_onnx(vgg11, (1,3,32,32), export_path_vgg11)
