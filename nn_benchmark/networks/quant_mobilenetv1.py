@@ -120,4 +120,4 @@ class QuantMobilenetV1(nn.Module):
         out = self.final_pool(out)
         out = out.view(out.size(0), -1)
         out = self.classifier(out)
-        return F.softmax(out, dim=1)
+        return out

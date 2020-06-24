@@ -80,7 +80,7 @@ class QuantVGG(nn.Module):
         out = self.features(x)
         out = out.view(out.size(0), -1)
         out = self.classifier(out)
-        return F.softmax(out,dim=1)
+        return out
 
 
 def QuantVGG11(in_channels=3, n_classes=10,weight_bit_width=2, act_bit_width=2, in_bit_width=8):
