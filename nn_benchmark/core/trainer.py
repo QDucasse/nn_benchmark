@@ -455,11 +455,16 @@ class Trainer(object):
             # Checkpoint save:
             # If the top 1 average is better the one from the last epoch --> Save under "best.tar"
             # Else --> Save under "checkpoint.tar"
-            if top1avg >= self.best_val_acc and not self.args.dry_run:
-                self.best_val_acc = top1avg
-                self.checkpoint_best(epoch, "best.tar")
-            elif not self.args.dry_run:
-                self.checkpoint_best(epoch, "checkpoint.tar")
+            if not self.args.dry_run:
+                if top1avg >= self.best_val_acc:
+                    self.best_val_acc = top1avg
+                    self.checkpoint_best(epoch, "best.tar")
+                else:
+                    self.checkpoint_best(epoch, "checkpoint.tar")
+
+                # Save a different model every 10 epochs
+                if epoch%10==0:
+                    self.checkpoint_best(epoch, "checkpoint_" + str(epoch) + ".tar")
 
         # Training ends
         if not self.args.dry_run:
