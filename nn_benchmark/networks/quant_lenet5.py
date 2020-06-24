@@ -31,8 +31,8 @@ FC_IN_FEAT = [120, 84]
 
 class QuantLeNet5(nn.Module):
     '''LeNet5 neural network'''
-    def __init__(self, n_classes=10, in_channels=1,
-                 weight_bit_width=1, act_bit_width=1, in_bit_width=8):
+    def __init__(self, n_classes=10, in_channels=3,
+                 weight_bit_width=4, act_bit_width=4, in_bit_width=8):
         super(QuantLeNet5, self).__init__()
 
         self.feature_extractor = nn.Sequential(
@@ -99,4 +99,4 @@ class QuantLeNet5(nn.Module):
         out = self.feature_extractor(x)
         out = out.view(out.size(0), -1)
         out = self.classifier(out)
-        return F.softmax(out, dim=1)
+        return out
