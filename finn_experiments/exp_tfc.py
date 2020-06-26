@@ -43,7 +43,7 @@ from finn.transformation.fpgadataflow.make_deployment  import DeployToPYNQ
 # ===================================================================
 # ===================================================================
 
-build_dir = "/home/qducasse/Desktop/nn_projects/finn/example_onnx/tfc_example_onnx/""
+build_dir = "/workspace/finn/onnx_experiments/tfc_example_onnx/""
 
 def save(model,suffix):
 	model.save(build_dir + "tfc_w1_a1_" + suffix + ".onnx")
@@ -59,7 +59,7 @@ bo.export_finn_onnx(tfc, (1, 1, 28, 28), "./tfc_w1_a1.onnx")
 model = ModelWrapper("./tfc_w1_a1.onnx")
 
 # Trained
-model = ModelWrapper("trained_onnx/QuantTFC.onnx")
+model = ModelWrapper("/workspace/finn/onnx_experiments/QuantTFC.onnx")
 
 # Basic Transformations
 model = model.transform(InferShapes())

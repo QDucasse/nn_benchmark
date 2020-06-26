@@ -47,7 +47,7 @@ from finn.transformation.fpgadataflow.make_deployment  import DeployToPYNQ
 # ===================================================================
 # ===================================================================
 
-build_dir = "/workspace/finn/example_onnx/cnv_example_onnx/"
+build_dir = "/workspace/finn/onnx_experiments/cnv_example_onnx/"
 
 def save(model,suffix):
 	model.save(build_dir + "cnv_" + suffix + ".onnx")
@@ -57,7 +57,7 @@ def log(string):
 	print("  "+string)
 	print("=================================\n\n")
 
-model = ModelWrapper("trained_onnx/QuantCNV.onnx")
+model = ModelWrapper("/workspace/finn/onnx_experiments/QuantCNV.onnx")
 
 # Basic Transformations
 model = model.transform(DoubleToSingleFloat())
