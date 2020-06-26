@@ -49,7 +49,7 @@ HIDDEN_DROPOUT = 0.2
 
 class QuantTFC(nn.Module):
 
-    def __init__(self, n_classes=10, weight_bit_width=2, act_bit_width=2,
+    def __init__(self, n_classes=10, weight_bit_width=4, act_bit_width=4,
                  in_bit_width=8, in_channels=3, in_features=(32, 32)):
         super(QuantTFC, self).__init__()
 
@@ -91,4 +91,4 @@ class QuantTFC(nn.Module):
         # out = 2.0 * out - torch.tensor([1.0], device=out.device)
         for mod in self.features:
             out = mod(out)
-        return x
+        return out
