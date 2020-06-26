@@ -11,12 +11,9 @@ from nn_benchmark.networks import QuantTFC, QuantCNV, QuantMobilenetV1
 
 
 if __name__ == "__main__":
-    acq_list = [2]
-    weq_list = [2]
-    inq_list = [8]
-    # acq_list = [2, 4, 8, 16, 32]
-    # weq_list = [2, 4, 8, 16, 32]
-    # inq_list = [8, 8, 8, 32, 32]
+    acq_list = [2, 4, 8, 16, 32]
+    weq_list = [2, 4, 8, 16, 32]
+    inq_list = [8, 8, 8, 32, 32]
 
     args = {'datadir': './data/', 'experiments': './experiments', 'dry_run': False,
             'log_freq': 10, 'evaluate': False, 'resume': None, 'detect_nan': False,
