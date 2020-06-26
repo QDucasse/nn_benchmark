@@ -108,7 +108,8 @@ class Trainer(object):
         # Initialize the logger
         self.logger = None
         self.init_logger(args.dry_run,args.resume)
-        self.logger.info(args)
+        self.logger.info("Training logs of network {} on dataset {} with bitwidths {}, {}, {} (activation, weight, input)".format(
+                                        self.args.network, self.args.dataset, self.args.acq, self.args.weq, self.args.inq))
 
         # Initialize the plotter
         self.plotter = None
@@ -132,7 +133,9 @@ class Trainer(object):
     def init_output(self,resume):
         '''Initializes the output directory of the experiments:
            experiments/<network name>_<timestamp>'''
-        experiment_name = "{0}_{1}".format(self.model.name, datetime.now().strftime('%Y%m%d_%H%M%S'))
+        experiment_name = "{0}_A{1}W{2}I{3}_{4}".format(self.model.name, str(self.act_bit_width),
+                                                        str(self.weight_bit_width), str(self.input_bit_width),
+                                                        datetime.now().strftime('%Y%m%d_%H%M%S'))
         self.output_dir_path = os.path.join(self.args.experiments, experiment_name)
         # Goes back to the experiments folder in case of resume
         if self.args.resume:
@@ -412,7 +415,6 @@ class Trainer(object):
             # Init metrics
             epoch_meters = TrainingEpochMeters()
             start_data_loading = time.time()
-
             for i, data in enumerate(self.train_loader):
                 (input, target) = data
                 # input = input.to(self.device, non_blocking=True)
@@ -444,7 +446,7 @@ class Trainer(object):
 
             # Set the learning rate with the scheduler or halves the learning rate every 40 epochs
             if self.scheduler is not None:
-                self.scheduler.step(epoch)
+                self.scheduler.step()
             else:
                 if epoch%40==0:
                     self.optimizer.param_groups[0]['lr'] *= 0.5
@@ -548,4 +550,3 @@ if __name__ == "__main__":
     args = ObjDict(args)
     trainer = Trainer(args)
     trainer.train_model()
-    trainer.export_onnx()
