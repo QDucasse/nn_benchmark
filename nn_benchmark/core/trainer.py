@@ -69,6 +69,7 @@ networks = {"LeNet": LeNet,
 
 class Trainer(object):
     def __init__(self,args):
+        torch.set_num_threads(4)
         # Save the args as instance variables
         self.args = args
         # Initialize the randomness parameters

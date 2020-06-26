@@ -112,14 +112,6 @@ class GTSRB(ImageFolder):
 
     def _check_exists(self):
         res = (os.path.exists(self.train_folder) and os.path.exists(self.test_folder))
-        if not res:
-            return False
-
-        for i in range(43):
-            train_class_folder = os.path.join(self.train_folder,str(i).zfill(5))
-            res = res and os.path.exists(train_class_folder)
-            test_class_folder = os.path.join(self.test_folder,str(i).zfill(5))
-            res = res and os.path.exists(test_class_folder)
         return res
 
     def download(self):
