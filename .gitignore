@@ -130,6 +130,8 @@ Thumbs.db
 # README for data and experiments
 experiments/*
 data/*
+trained_onnx/*
 !experiments/README.md
 !data/README.md
+!trained_onnx/README.md
 *.onnx
