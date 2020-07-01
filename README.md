@@ -8,6 +8,12 @@ You can run the training of `LeNet` on the `MNIST` dataset as follows:
 ```bash
 $ PYTORCH_JIT=1 python nn_benchmark/main.py --network LeNet --dataset MNIST --epochs 3
 ```
+
+Or its quantized version `QuantLeNet` on the `CIFAR-10` dataset with bit-width of (4,4,8) (corresponding to activation, weight and input) :
+```bash
+$ PYTORCH_JIT=1 python nn_benchmark/main.py --network QuantLeNet --dataset CIFAR10 --epochs 3 \
+$ --acq 4 --weq 4 --inq 8
+```
 The results can be observed under the experiments folder.
 
 You can then evaluate your network with the following command:
@@ -30,6 +36,7 @@ The following datasets can be used:
 - MNIST
 - FASHION-MNIST
 - CIFAR10
+- GTSRB
 
 ### Installation
 
@@ -71,7 +78,7 @@ Finally, whether you chose the first or second option, you will need brevitas if
 
 Quick presentation of the different modules of the project:
 * [**Core:**][core] Core functionalities of the project such as the `CLI`, `Logger`, `Plotter` and `Trainer`.
-* [**Extensions:**][extensions] Extended functionalities of the `PyTorch` modules. This package contains specific modules (e.g. `TensorNorm`), dataset (e.g. `GTSRB`) or loss functions (e.g. `SquaredHinge`) that can be used as drop-in replacements for their `PyTorch` homologues. 
+* [**Extensions:**][extensions] Extended functionalities of the `PyTorch` modules. This package contains specific modules (e.g. `TensorNorm`), dataset (e.g. `GTSRB`) or loss functions (e.g. `SquaredHinge`) that can be used as drop-in replacements for their `PyTorch` homologues.
 * [**Networks:**][networks] Network architectures implemented in the project that can be used with the CLI `--network` flag. If the suffix `Quant` is present, this means the network is quantized and the three following precisions can be specified: `weight_bit_width`, precision of the weights ; `act_bit_width` precision of the activation functions ; `in_bit_width`, input precision (this is useful to keep a higher precision at the beginning).
 ---
 ### Requirements
@@ -121,4 +128,3 @@ by executing the testfile itself.
 [extensions]: https://github.com/QDucasse/nn_benchmark/tree/master/nn_benchmark/extensions	"extensions package"
 
 [networks]: https://github.com/QDucasse/nn_benchmark/tree/master/nn_benchmark/networks	"networks package"
-
