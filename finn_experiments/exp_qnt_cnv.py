@@ -14,7 +14,7 @@ from finn.custom_op.registry import getCustomOp
 
 ## Basic Transformations
 from finn.transformation.double_to_single_float import DoubleToSingleFloat
-from finn.transformation.general 	            import GiveReadableTensorNames, GiveUniqueNodeNames, RemoveStaticGraphInputs
+from finn.transformation.general 	            import GiveReadableTensorNames, GiveUniqueNodeNames, # RemoveStaticGraphInputs
 from finn.transformation.infer_datatypes        import InferDataTypes
 from finn.transformation.infer_shapes 	        import InferShapes
 from finn.transformation.fold_constants         import FoldConstants
@@ -72,7 +72,7 @@ def tidy_up(model):
     model = model.transform(FoldConstants())
     model = model.transform(GiveUniqueNodeNames())
     model = model.transform(GiveReadableTensorNames())
-    model = model.transform(RemoveStaticGraphInputs())
+    # model = model.transform(RemoveStaticGraphInputs())
     log("Basic transformations completed")
     save(model,"tidy")
     return model
@@ -87,7 +87,7 @@ def streamline(model, binary=True):
     if binary:
         model = model.transform(ConvertBipolarMatMulToXnorPopcount())
     model = model.transform(Streamline())
-    model = model.transform(RemoveUnusedTensors())
+    # model = model.transform(RemoveUnusedTensors())
     log("Streamline transformations completed")
     save(model,"streamlined")
     return model
@@ -109,11 +109,12 @@ def hls_conversion(model, binary=True):
 def create_dataflow_partition(model):
     log("Creating Dataflow Partition")
     parent_model = model.transform(CreateDataflowPartition())
-    save(model,"dataflow")
+    save(parent_model,"dataflow_parent")
 
     sdp_node = getCustomOp(parent_model.graph.node[2])
     dataflow_model_filename = sdp_node.get_nodeattr("model")
     model = ModelWrapper(dataflow_model_filename)
+    save(model,"dataflow_model")
     log("Dataflow partition created")
     return parent_model, model
 
@@ -137,7 +138,7 @@ def folding(model):
         fcl_inst.set_nodeattr("PE", pe)
         fcl_inst.set_nodeattr("SIMD", simd)
         fcl_inst.set_nodeattr("inFIFODepth", ififodepth)
-    	fcl_inst.set_nodeattr("ram_style", ramstyle)
+        fcl_inst.set_nodeattr("ram_style", ramstyle)
 
     # use same SIMD values for the sliding window operators
     swg_layers = model.get_nodes_by_op_type("ConvolutionInputGenerator")
@@ -146,7 +147,7 @@ def folding(model):
         swg_inst = getCustomOp(swg_layers[i])
         simd = folding[i][1]
         swg_inst.set_nodeattr("SIMD", simd)
-    	swg_inst.set_nodeattr("inFIFODepth", swg_idepth[i])
+        swg_inst.set_nodeattr("inFIFODepth", swg_idepth[i])
 
     model = model.transform(InsertDWC())
     model = model.transform(InsertFIFO())
@@ -161,6 +162,7 @@ def prepare_ip(model, fpga_part, target_clk_ns):
     log("Preparing IP blocks generation")
     model = model.transform(GiveUniqueNodeNames())
     model = model.transform(PrepareIP(fpga_part, target_clk_ns))
+    save(model,"ip_preparation")
     log("IP blocks preparation completed")
     return model
 
@@ -224,8 +226,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Directory and model specification
-    build_dir = "/workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}/"
-    model = ModelWrapper("/workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}/QuantCNV_A{0}W{1}I{2}_E{3}.onnx".format(args.acq, args.weq, args.inq, epoch))
+    build_dir = "/workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}/".format(args.acq, args.weq, args.inq)
+    model = ModelWrapper("/workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}/QuantCNV_A{0}W{1}I{2}_E{3}.onnx".format(args.acq, args.weq, args.inq, args.epoch))
     binary = (args.acq == 1)
     # Synthesis info
     pynq_board = "Pynq-Z1"
