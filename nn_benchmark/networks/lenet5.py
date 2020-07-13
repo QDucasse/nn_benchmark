@@ -10,8 +10,6 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
 
 class LeNet5(nn.Module):
     '''LeNet5 architecture in PyTorch'''
@@ -44,7 +42,7 @@ class LeNet5(nn.Module):
         out = self.feature_extractor(x)
         out = out.view(out.size(0), -1)
         out = self.classifier(out)
-        return F.softmax(out, dim=1)
+        return out
 
 if __name__ == "__main__":
     mod = LeNet5(in_channels=3)
