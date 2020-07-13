@@ -6,6 +6,7 @@
 # quentin.ducasse@ensta-bretagne.org
 
 import sys
+import torch
 from nn_benchmark.core import Exporter
 from nn_benchmark.networks import QuantTFC, QuantCNV, QuantMobilenetV1
 
@@ -25,6 +26,9 @@ if __name__ == "__main__":
                 cnv_model = "/workspace/finn/trained_onnx/QuantCNV_A{0}W{1}I{2}/checkpoints/checkpoint_{3}.tar".format(acq, weq, inq, epoch)
             else:
                  cnv_model = "/workspace/finn/trained_onnx/QuantCNV_A{0}W{1}I{2}/checkpoints/best.tar".format(acq, weq, inq)
+            package = torch.load(cnv_model, map_location='cpu')
+            model_state_dict = package['state_dict']
+            cnv.load_state_dict(model_state_dict)
             # Generate ONNX counterpart
             output_path = "/workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}".format(acq, weq, inq, epoch)
             exporter.export_onnx(model = cnv_model, output_dir_path = output_path, in_channels = 3,
