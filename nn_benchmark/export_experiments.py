@@ -31,5 +31,7 @@ if __name__ == "__main__":
             cnv.load_state_dict(model_state_dict)
             # Generate ONNX counterpart
             output_path = "/workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}".format(acq, weq, inq, epoch)
-            exporter.export_onnx(model = cnv_model, output_dir_path = output_path, in_channels = 3,
-                                 act_bit_width = acq, weight_bit_width = weq, input_bit_width = inq)
+            print("Exporting QuantCNV_A{0}W{1}I{2}_E{3}.onnx".format(acq,weq,inq,epoch))
+            exporter.export_onnx(model = cnv, output_dir_path = output_path, in_channels = 3,
+                                 act_bit_width = acq, weight_bit_width = weq, input_bit_width = inq,
+                                 epoch = epoch)
