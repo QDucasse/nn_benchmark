@@ -20,6 +20,7 @@ from finn.transformation.insert_topk            import InsertTopK
 import finn.transformation.streamline.absorb as absorb
 from finn.transformation.lower_convs_to_matmul        import LowerConvsToMatMul
 from finn.transformation.streamline                   import Streamline
+from finn.transformation.streamline.remove            import RemoveIdentityOps
 from finn.transformation.streamline.reorder           import MoveMulPastDWConv, MoveTransposePastScalarMul, MoveFlatten, MoveScalarMulPastMatMul
 from finn.transformation.streamline.collapse_repeated import CollapseRepeatedMul
 from finn.transformation.change_datalayout            import ChangeDataLayoutQuantAvgPool2d
