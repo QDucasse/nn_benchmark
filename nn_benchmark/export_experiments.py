@@ -26,6 +26,6 @@ if __name__ == "__main__":
             else:
                  cnv_model = "/workspace/finn/trained_onnx/QuantCNV_A{0}W{1}I{2}/checkpoints/best.tar".format(acq, weq, inq)
             # Generate ONNX counterpart
-            output_path = "workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}/QuantCNV_A{0}W{1}I{2}.onnx".format(acq, weq, inq, epoch)
-            exporter.export_onnx(model = cnv, output_dir_path = output_path, in_channels = 3,
+            output_path = "/workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}".format(acq, weq, inq, epoch)
+            exporter.export_onnx(model = cnv_model, output_dir_path = output_path, in_channels = 3,
                                  act_bit_width = acq, weight_bit_width = weq, input_bit_width = inq)
