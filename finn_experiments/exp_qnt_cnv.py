@@ -2,6 +2,10 @@
 # =========================== IMPORTS ===============================
 # ===================================================================
 
+import argparse
+import os
+import sys
+
 import onnx
 import brevitas.onnx as bo
 from finn.util.test          import get_test_model_trained
@@ -45,6 +49,7 @@ from finn.transformation.fpgadataflow.make_deployment  import DeployToPYNQ
 
 
 # ===================================================================
+# HELPERS
 # ===================================================================
 
 def save(model,suffix):
@@ -54,6 +59,10 @@ def log(string):
 	print("=================================")
 	print("  "+string)
 	print("=================================\n\n")
+
+# ===================================================================
+# TRANSFORMATIONS
+# ===================================================================
 
 # Basic Transformations
 def tidy_up(model):
@@ -206,10 +215,18 @@ def softmax(x):
 
 
 if __name__ == "__main__":
+    # Parse CLI arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--acq", type=int)
+    parser.add_argument("--weq", type=int)
+    parser.add_argument("--inq", type=int)
+    parser.add_argument("--epoch", type=int)
+    args = parser.parse_args()
+
     # Directory and model specification
-    build_dir = "/workspace/finn/onnx_experiments/cnv_example_onnx/"
-    model = ModelWrapper("/workspace/finn/onnx_experiments/QuantCNV.onnx")
-    binary = False
+    build_dir = "/workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}/"
+    model = ModelWrapper("/workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}/QuantCNV_A{0}W{1}I{2}_E{3}.onnx".format(args.acq, args.weq, args.inq, epoch))
+    binary = (args.acq == 1)
     # Synthesis info
     pynq_board = "Pynq-Z1"
     fpga_part = pynq_part_map[pynq_board]
