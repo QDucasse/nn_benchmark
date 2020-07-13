@@ -32,12 +32,13 @@ class Exporter(object):
 
     def quant_export(self, model, output_dir_path,
                      act_bit_width=4, weight_bit_width=4,
-                     input_bit_width=8, in_channels=3,
-                     input_tensor=None, torch_onnx_kwargs={}):
-        model_act_bit_width    = "A" + str(act_bit_width)
+                     input_bit_width=8, epoch = 10, in_channels=3,
+                     input_tensor=None):
+        model_act_bit_width    = "_A" + str(act_bit_width)
         model_weight_bit_width = "W" + str(weight_bit_width)
         model_input_bit_width  = "I" + str(input_bit_width)
-        model_name_with_attr   = "".join([model.name+"_",model_act_bit_width,model_weight_bit_width,model_input_bit_width])
+        model_epoch            = "_E" + str(epoch)
+        model_name_with_attr   = "".join([model.name, model_act_bit_width, model_weight_bit_width, model_input_bit_width, model_epoch])
         bo.export_finn_onnx(module=model,
                             input_shape=(1, in_channels, 32, 32),
                             export_path=output_dir_path +"/"+ model_name_with_attr + ".onnx",

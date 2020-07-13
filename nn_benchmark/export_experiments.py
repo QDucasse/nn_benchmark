@@ -6,7 +6,7 @@
 # quentin.ducasse@ensta-bretagne.org
 
 import sys
-from nn_benchmark.core import ObjDict, Trainer
+from nn_benchmark.core import Exporter
 from nn_benchmark.networks import QuantTFC, QuantCNV, QuantMobilenetV1
 
 if __name__ == "__main__":
@@ -22,10 +22,10 @@ if __name__ == "__main__":
             # Load correct model
             cnv = QuantCNV()
             if epoch != 40:
-                cnv_model = "/workspace/finn/trained_onnx/QuantCNV_A{0}W{1}I{2}/checkpoints/checkpoint_{3}.tar".format(acq, we1, inq, epoch)
+                cnv_model = "/workspace/finn/trained_onnx/QuantCNV_A{0}W{1}I{2}/checkpoints/checkpoint_{3}.tar".format(acq, weq, inq, epoch)
             else:
-                 cnv_model = "/workspace/finn/trained_onnx/QuantCNV_A{0}W{1}I{2}/checkpoints/best.tar".format(acq, we1, inq)
+                 cnv_model = "/workspace/finn/trained_onnx/QuantCNV_A{0}W{1}I{2}/checkpoints/best.tar".format(acq, weq, inq)
             # Generate ONNX counterpart
-            output_path = "workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}/QuantCNV_A{0}W{1}I{2}.onnx".
+            output_path = "workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}/QuantCNV_A{0}W{1}I{2}.onnx".format(acq, weq, inq, epoch)
             exporter.export_onnx(model = cnv, output_dir_path = output_path, in_channels = 3,
                                  act_bit_width = acq, weight_bit_width = weq, input_bit_width = inq)

@@ -9,6 +9,6 @@ from __future__ import absolute_import
 
 __all__ = ["gtsrb","tensor_norm","squared_hinge_loss"]
 
-from .gtsrb              import *
+# from .gtsrb              import *
 from .squared_hinge_loss import *
 from .tensor_norm        import *
