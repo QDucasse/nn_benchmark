@@ -45,7 +45,7 @@ from torchvision.datasets     import MNIST, CIFAR10, FashionMNIST
 from nn_benchmark.networks    import LeNet, LeNet5, VGG11, VGG13, VGG16, VGG19, MobilenetV1, AlexNet
 from nn_benchmark.networks    import QuantLeNet5, QuantCNV, QuantTFC, QuantMobilenetV1, QuantVGG11, QuantVGG13, QuantVGG16, QuantVGG19, QuantAlexNet
 
-from nn_benchmark.extensions    import SqrHingeLoss, GTSRB
+from nn_benchmark.extensions    import SqrHingeLoss #, GTSRB
 from nn_benchmark.core.logger   import Logger, TrainingEpochMeters, EvalEpochMeters
 from nn_benchmark.core.plotter  import Plotter
 from nn_benchmark.core.exporter import Exporter
