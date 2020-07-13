@@ -62,14 +62,27 @@ if __name__ == "__main__":
     mobilenet = QuantMobilenetV1()
     lenet5    = QuantLeNet5()
     vgg11     = QuantVGG11()
-    print("Exporting TFC network...")
-    bo.export_finn_onnx(tfc, (1,3,32,32), export_path_tfc)
-    print("Done!\n\nExporting CNV network...")
+    # print("Exporting TFC network...")
+    # bo.export_finn_onnx(tfc, (1,3,32,32), export_path_tfc)
+    # print("Done!\n\nExporting CNV network...")
+    # bo.export_finn_onnx(cnv, (1,3,32,32), export_path_cnv)
+    # print("Done!\n\nExporting MobilenetV1 network...")
+    # bo.export_finn_onnx(mobilenet, (1,3,32,32), export_path_mobilenet)
+    # print("Done!\n\nExporting LeNet5 network...")
+    # bo.export_finn_onnx(lenet5, (1,3,32,32), export_path_lenet5)
+    # print("Done!\n\nExporting VGG11 network...")
+    # bo.export_finn_onnx(vgg11, (1,3,32,32), export_path_vgg11)
+    # print("Done!")
+
+
+    # Export models from the docker
+
+    cnv = QuantCNV()
+    export_path_cnv = "/workspace/finn/experiments/QuantCNV_A8W8_E10.onnx"
+    cnv_model =  "/workspace/finn/experiments/QuantCNV_A8W8I8_20200626_200939/checkpoints/checkpoint_10.tar"
+    print("Loading trained network...")
+    package = torch.load(resume, map_location='cpu')
+    model_state_dict = package['state_dict']
+    cnv.load_state_dict(model_state_dict)
+
     bo.export_finn_onnx(cnv, (1,3,32,32), export_path_cnv)
-    print("Done!\n\nExporting MobilenetV1 network...")
-    bo.export_finn_onnx(mobilenet, (1,3,32,32), export_path_mobilenet)
-    print("Done!\n\nExporting LeNet5 network...")
-    bo.export_finn_onnx(lenet5, (1,3,32,32), export_path_lenet5)
-    print("Done!\n\nExporting VGG11 network...")
-    bo.export_finn_onnx(vgg11, (1,3,32,32), export_path_vgg11)
-    print("Done!")
