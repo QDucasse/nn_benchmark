@@ -37,7 +37,7 @@ class Exporter(object):
         model_act_bit_width    = "A" + str(act_bit_width)
         model_weight_bit_width = "W" + str(weight_bit_width)
         model_input_bit_width  = "I" + str(input_bit_width)
-        model_name_with_attr   = "_".join([model.name,model_act_bit_width,model_weight_bit_width,model_input_bit_width])
+        model_name_with_attr   = "".join([model.name+"_",model_act_bit_width,model_weight_bit_width,model_input_bit_width])
         bo.export_finn_onnx(module=model,
                             input_shape=(1, in_channels, 32, 32),
                             export_path=output_dir_path +"/"+ model_name_with_attr + ".onnx",
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     export_path_cnv = "/workspace/finn/experiments/QuantCNV_A8W8_E10.onnx"
     cnv_model =  "/workspace/finn/experiments/QuantCNV_A8W8I8_20200626_200939/checkpoints/checkpoint_10.tar"
     print("Loading trained network...")
-    package = torch.load(resume, map_location='cpu')
+    package = torch.load(cnv_model, map_location='cpu')
     model_state_dict = package['state_dict']
     cnv.load_state_dict(model_state_dict)
 
