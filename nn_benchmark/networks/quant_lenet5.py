@@ -9,7 +9,6 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import brevitas.nn as qnn
 
 from nn_benchmark.networks.quant_utils import make_quant_conv2d, make_quant_linear, make_quant_avg_pool
