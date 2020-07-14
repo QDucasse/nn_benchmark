@@ -120,7 +120,7 @@ def folding(model):
     fc_layers = model.get_nodes_by_op_type("StreamingFCLayer_Batch")
     # (PE, SIMD, in_fifo_depth, out_fifo_depth, ramstyle) for each layer
     config = [
-        (16, 49, 16, 64, "block"),
+        (16, 64, 16, 64, "block"),
         (8, 8, 64, 64, "auto"),
         (8, 8, 64, 64, "auto"),
         (10, 8, 64, 10, "distributed"),
@@ -132,6 +132,9 @@ def folding(model):
         fcl_inst.set_nodeattr("inFIFODepth", ififo)
         fcl_inst.set_nodeattr("outFIFODepth", ofifo)
         fcl_inst.set_nodeattr("ram_style", ramstyle)
+        print("MW="+str(fcl_inst.get_nodeattr("MW")))
+        print("SIMD="+str(fcl_inst.get_nodeattr("SIMD")))
+        print("---")
     model = model.transform(InsertDWC())
     model = model.transform(InsertFIFO())
     model = model.transform(InsertTLastMarker())
@@ -184,6 +187,7 @@ def gen_driver(model):
     log("Driver generation launched")
     model = model.transform(MakePYNQDriver())
     log("Driver generation completed")
+    return model
 
 def deploy(model, ip, port, username, password, target_dir):
     log("Deployment launched")
@@ -239,61 +243,66 @@ if __name__ == "__main__":
     model = gen_driver(model)
     model = deploy(model, ip, port, username, password, target_dir)
 
-    # # ==========================================================================
-    # # TESTING EXECUTION ON BOARD
-    # # ==========================================================================
-    #
-    # # Execution on the board and tests
-    # from pkgutil import get_data
-    # import onnx.numpy_helper as nph
-    # import matplotlib.pyplot as plt
-    #
-    # raw_i = get_data("finn", "data/onnx/mnist-conv/test_data_set_0/input_0.pb")
-    # x = nph.to_array(onnx.load_tensor_from_string(raw_i))
-    # # plt.imshow(x.reshape(28,28), cmap='gray') # Display an image of the MNIST dataset
-    # build_dir = "/home/qducasse/Desktop/nn_projects/finn/onnx/tfc_w1_a1_"
-    # parent_model = ModelWrapper(build_dir+"dataflow.onnx")
-    # sdp_node = parent_model.graph.node[2]
-    # remote_exec_model = build_dir + "deploy.onnx"
-    # getCustomOp(sdp_node).set_nodeattr("model", remote_exec_model)
-    # parent_model.save(model,"dataflow_parent_with_remote_bitfile_exec")
-    #
-    # ## EXECUTION
-    #
-    # import numpy as np
-    # from finn.core.onnx_exec import execute_onnx
-    # iname = parent_model.graph.input[0].name
-    # oname = parent_model.graph.output[0].name
-    # ishape = parent_model.get_tensor_shape(iname)
-    # input_dict = {iname: x.reshape(ishape)}
-    # ret = execute_onnx(parent_model, input_dict, True)
-    #
-    # def softmax(x):
-    #     """Compute softmax values for each sets of scores in x."""
-    #     e_x = np.exp(x - np.max(x))
-    #     return e_x / e_x.sum()
-    #
-    # logits = ret[oname].flatten()
-    # prob = softmax(logits)
-    #
-    # plt.bar(np.arange(10), prob)
-    #
-    #
-    # # THROUGHPUT TESTS
-    # from finn.core.throughput_test import throughput_test
-    #
-    # child_model = ModelWrapper(getCustomOp(sdp_node).get_nodeattr("model"))
-    # res = throughput_test(child_model)
-    # print("Network metrics:")
-    # for key in res:
-    #     print(str(key) + ": " + str(res[key]))
-    #
-    # II = 64
-    # # frequency in MHz
-    # f_MHz = 100
-    # # expected throughput in MFPS
-    # expected_throughput = f_MHz / II
-    # # measured throughput (FPS) from throughput test, converted to MFPS
-    # measured_throughput = res["throughput[images/s]"] * 0.000001
-    # # peformance
-    # print("We reach approximately " + str(round((measured_throughput / expected_throughput)*100)) + "% of the ideal performance.")
+    # ==========================================================================
+    # TESTING EXECUTION ON BOARD
+    # ==========================================================================
+
+    # Execution on the board and tests
+    from pkgutil import get_data
+    import onnx.numpy_helper as nph
+    import matplotlib.pyplot as plt
+    from PIL import Image
+    import torchvision.transforms.functional as TF
+
+    image = Image.open('/workspace/finn/onnx_experiments/img_MNIST.png')
+    x = TF.to_tensor(image)
+    x.unsqueeze_(0)
+
+    plt.imshow(x.reshape(32,32), cmap='gray') # Display an image of the MNIST dataset
+    plt.show()
+    parent_model = load("dataflow_parent")
+    sdp_node = parent_model.graph.node[2]
+    remote_exec_model = build_dir + "tfc_deploy.onnx"
+    getCustomOp(sdp_node).set_nodeattr("model", remote_exec_model)
+    save(parent_model,"dataflow_parent_with_remote_bitfile_exec")
+
+
+    ## EXECUTION
+
+    import numpy as np
+    from finn.core.onnx_exec import execute_onnx
+    iname = parent_model.graph.input[0].name
+    oname = parent_model.graph.output[0].name
+    ishape = parent_model.get_tensor_shape(iname)
+    input_dict = {iname: x.reshape(ishape)}
+    ret = execute_onnx(parent_model, input_dict, True)
+
+    def softmax(x):
+        """Compute softmax values for each sets of scores in x."""
+        e_x = np.exp(x - np.max(x))
+        return e_x / e_x.sum()
+
+    logits = ret[oname].flatten()
+    prob = softmax(logits)
+
+    plt.bar(np.arange(10), prob)
+
+
+    # THROUGHPUT TESTS
+    from finn.core.throughput_test import throughput_test
+
+    child_model = ModelWrapper(getCustomOp(sdp_node).get_nodeattr("model"))
+    res = throughput_test(child_model)
+    print("Network metrics:")
+    for key in res:
+        print(str(key) + ": " + str(res[key]))
+
+    II = 64
+    # frequency in MHz
+    f_MHz = 100
+    # expected throughput in MFPS
+    expected_throughput = f_MHz / II
+    # measured throughput (FPS) from throughput test, converted to MFPS
+    measured_throughput = res["throughput[images/s]"] * 0.000001
+    # peformance
+    print("We reach approximately " + str(round((measured_throughput / expected_throughput)*100)) + "% of the ideal performance.")
