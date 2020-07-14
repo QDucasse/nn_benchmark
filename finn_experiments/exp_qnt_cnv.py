@@ -14,7 +14,7 @@ from finn.custom_op.registry import getCustomOp
 
 ## Basic Transformations
 from finn.transformation.double_to_single_float import DoubleToSingleFloat
-from finn.transformation.general 	            import GiveReadableTensorNames, GiveUniqueNodeNames, # RemoveStaticGraphInputs
+from finn.transformation.general 	            import GiveReadableTensorNames, GiveUniqueNodeNames # RemoveStaticGraphInputs
 from finn.transformation.infer_datatypes        import InferDataTypes
 from finn.transformation.infer_shapes 	        import InferShapes
 from finn.transformation.fold_constants         import FoldConstants
@@ -54,6 +54,9 @@ from finn.transformation.fpgadataflow.make_deployment  import DeployToPYNQ
 
 def save(model,suffix):
 	model.save(build_dir + "cnv_" + suffix + ".onnx")
+
+def load(suffix):
+	return ModelWrapper(build_dir+"cnv_+" suffix + ".onnx")
 
 def log(string):
 	print("=================================")
@@ -104,6 +107,7 @@ def hls_conversion(model, binary=True):
     model = model.transform(to_hls.InferStreamingMaxPool())
     model = model.transform(RemoveCNVtoFCFlatten())
     log("HLS Conversion finished")
+	save(model,"hls_conversion")
     return model
 
 def create_dataflow_partition(model):
@@ -111,9 +115,9 @@ def create_dataflow_partition(model):
     parent_model = model.transform(CreateDataflowPartition())
     save(parent_model,"dataflow_parent")
 
-    sdp_node = getCustomOp(parent_model.graph.node[2])
+    sdp_node = parent_model.get_nodes_by_op_type("StreamingDataflowPartition")[0]
+    sdp_node = getCustomOp(sdp_node)
     dataflow_model_filename = sdp_node.get_nodeattr("model")
-    model = ModelWrapper(dataflow_model_filename)
     save(model,"dataflow_model")
     log("Dataflow partition created")
     return parent_model, model
