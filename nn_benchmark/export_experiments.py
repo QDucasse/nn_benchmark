@@ -23,18 +23,18 @@ if __name__ == "__main__":
     for epoch in epochs:
         for acq, weq, inq in zip(acq_list, weq_list, inq_list):
             # Load correct model
-            tfc = QuantTFC()
+            tfc = QuantTFC(in_channels=1)
             if epoch != 40:
-                cnv_model = "/workspace/finn/trained_onnx/QuantTFC_A{0}W{1}I{2}/checkpoints/checkpoint_{3}.tar".format(acq, weq, inq, epoch)
+                tfc_model = "/workspace/finn/trained_onnx/QuantTFC_A{0}W{1}I{2}/checkpoints/checkpoint_{3}.tar".format(acq, weq, inq, epoch)
             else:
-                 cnv_model = "/workspace/finn/trained_onnx/QuantTFC_A{0}W{1}I{2}/checkpoints/best.tar".format(acq, weq, inq)
-            package = torch.load(cnv_model, map_location='cpu')
+                 tfc_model = "/workspace/finn/trained_onnx/QuantTFC_A{0}W{1}I{2}/checkpoints/best.tar".format(acq, weq, inq)
+            package = torch.load(tfc_model, map_location='cpu')
             model_state_dict = package['state_dict']
-            cnv.load_state_dict(model_state_dict)
+            tfc.load_state_dict(model_state_dict)
             # Generate ONNX counterpart
             output_path = "/workspace/finn/onnx_experiments/QuantTFC_A{0}W{1}I{2}".format(acq, weq, inq, epoch)
             print("Exporting QuantTFC_A{0}W{1}I{2}_E{3}.onnx".format(acq,weq,inq,epoch))
-            exporter.export_onnx(model = cnv, output_dir_path = output_path, in_channels = 3,
+            exporter.export_onnx(model = tfc, output_dir_path = output_path, in_channels = 1,
                                  act_bit_width = acq, weight_bit_width = weq, input_bit_width = inq,
                                  epoch = epoch)
 
