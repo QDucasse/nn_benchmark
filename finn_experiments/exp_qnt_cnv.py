@@ -118,9 +118,10 @@ def create_dataflow_partition(model):
     sdp_node = parent_model.get_nodes_by_op_type("StreamingDataflowPartition")[0]
     sdp_node = getCustomOp(sdp_node)
     dataflow_model_filename = sdp_node.get_nodeattr("model")
+	dataflow_model = ModelWrapper(dataflow_model_filename)
     save(model,"dataflow_model")
     log("Dataflow partition created")
-    return parent_model, model
+    return parent_model, dataflow_model
 
 def folding(model):
     log("Tuning folding")
@@ -260,52 +261,52 @@ if __name__ == "__main__":
     model = gen_driver(model)
     model = deploy(model, ip, port, username, password, target_dir)
 
-    # ==========================================================================
-    # TESTING EXECUTION ON BOARD
-    # ==========================================================================
-    import pkg_resources as pk
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    # Loading the image to test
-    fn = pk.resource_filename("finn", "data/cifar10/cifar10-test-data-class3.npz")
-    x = np.load(fn)["arr_0"].astype(np.float32)
-    x = x / 255
-    # Setting the image as the last one
-    parent_model = ModelWrapper(build_dir+"/cnv_dataflow.onnx")
-    remote_exec_model = build_dir + "/cnv_deploy.onnx"
-    sdp_node = parent_model.get_nodes_by_op_type("StreamingDataflowPartition")[0]
-    sdp_node = getCustomOp(sdp_node)
-    sdp_node.set_nodeattr("model", remote_exec_model)
-    parent_model.save(model,"dataflow_parent_with_remote_bitfile_exec")
-
-    # Execution of the nn on board
-    import numpy as np
-    from finn.core.onnx_exec import execute_onnx
-    iname = parent_model.graph.input[0].name
-    oname = parent_model.graph.output[0].name
-    ishape = parent_model.get_tensor_shape(iname)
-    input_dict = {iname: x.reshape(ishape)}
-    ret = execute_onnx(parent_model, input_dict, True)
-    logits = ret[oname].flatten()
-    prob = softmax(logits)
-    plt.bar(np.arange(10), prob)
-
-    # THROUGHPUT TESTS
-    from finn.core.throughput_test import throughput_test
-
-    child_model = ModelWrapper(sdp_node.get_nodeattr("model"))
-    res = throughput_test(child_model)
-    print("Network metrics:")
-    for key in res:
-        print(str(key) + ": " + str(res[key]))
-
-    II = 64
-    # frequency in MHz
-    f_MHz = 50
-    # expected throughput in MFPS
-    expected_throughput = f_MHz / II
-    # measured throughput (FPS) from throughput test, converted to MFPS
-    measured_throughput = res["throughput[images/s]"] * 0.000001
-    # peformance
-    print("We reach approximately " + str(round((measured_throughput / expected_throughput)*100)) + "% of the ideal performance.")
+    # # ==========================================================================
+    # # TESTING EXECUTION ON BOARD
+    # # ==========================================================================
+    # import pkg_resources as pk
+    # import matplotlib.pyplot as plt
+    # import numpy as np
+	#
+    # # Loading the image to test
+    # fn = pk.resource_filename("finn", "data/cifar10/cifar10-test-data-class3.npz")
+    # x = np.load(fn)["arr_0"].astype(np.float32)
+    # x = x / 255
+    # # Setting the image as the last one
+    # parent_model = ModelWrapper(build_dir+"/cnv_dataflow.onnx")
+    # remote_exec_model = build_dir + "/cnv_deploy.onnx"
+    # sdp_node = parent_model.get_nodes_by_op_type("StreamingDataflowPartition")[0]
+    # sdp_node = getCustomOp(sdp_node)
+    # sdp_node.set_nodeattr("model", remote_exec_model)
+    # parent_model.save(model,"dataflow_parent_with_remote_bitfile_exec")
+	#
+    # # Execution of the nn on board
+    # import numpy as np
+    # from finn.core.onnx_exec import execute_onnx
+    # iname = parent_model.graph.input[0].name
+    # oname = parent_model.graph.output[0].name
+    # ishape = parent_model.get_tensor_shape(iname)
+    # input_dict = {iname: x.reshape(ishape)}
+    # ret = execute_onnx(parent_model, input_dict, True)
+    # logits = ret[oname].flatten()
+    # prob = softmax(logits)
+    # plt.bar(np.arange(10), prob)
+	#
+    # # THROUGHPUT TESTS
+    # from finn.core.throughput_test import throughput_test
+	#
+    # child_model = ModelWrapper(sdp_node.get_nodeattr("model"))
+    # res = throughput_test(child_model)
+    # print("Network metrics:")
+    # for key in res:
+    #     print(str(key) + ": " + str(res[key]))
+	#
+    # II = 64
+    # # frequency in MHz
+    # f_MHz = 50
+    # # expected throughput in MFPS
+    # expected_throughput = f_MHz / II
+    # # measured throughput (FPS) from throughput test, converted to MFPS
+    # measured_throughput = res["throughput[images/s]"] * 0.000001
+    # # peformance
+    # print("We reach approximately " + str(round((measured_throughput / expected_throughput)*100)) + "% of the ideal performance.")
