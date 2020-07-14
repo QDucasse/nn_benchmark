@@ -14,32 +14,32 @@ from finn.custom_op.registry import getCustomOp
 
 ## Basic Transformations
 from finn.transformation.double_to_single_float import DoubleToSingleFloat
-from finn.transformation.general 	            import GiveReadableTensorNames, GiveUniqueNodeNames # RemoveStaticGraphInputs
+from finn.transformation.general                 import GiveReadableTensorNames, GiveUniqueNodeNames # RemoveStaticGraphInputs
 from finn.transformation.infer_datatypes        import InferDataTypes
-from finn.transformation.infer_shapes 	        import InferShapes
+from finn.transformation.infer_shapes             import InferShapes
 from finn.transformation.fold_constants         import FoldConstants
 
 ## Streamline Transformations
 import finn.transformation.streamline.absorb as absorb
 from finn.transformation.lower_convs_to_matmul       import LowerConvsToMatMul
-from finn.transformation.streamline 				 import Streamline
+from finn.transformation.streamline                  import Streamline
 from finn.transformation.streamline.reorder          import MakeMaxPoolNHWC
-from finn.transformation.bipolar_to_xnor 			 import ConvertBipolarMatMulToXnorPopcount
+from finn.transformation.bipolar_to_xnor              import ConvertBipolarMatMulToXnorPopcount
 from finn.transformation.streamline.round_thresholds import RoundAndClipThresholds
 
 ## HLS Conversion
 import finn.transformation.fpgadataflow.convert_to_hls_layers as to_hls
 from finn.transformation.move_reshape                           import RemoveCNVtoFCFlatten
 from finn.transformation.fpgadataflow.create_dataflow_partition import CreateDataflowPartition
-from finn.transformation.fpgadataflow.insert_dwc 				import InsertDWC
-from finn.transformation.fpgadataflow.insert_fifo 				import InsertFIFO
-from finn.transformation.fpgadataflow.insert_tlastmarker 		import InsertTLastMarker
+from finn.transformation.fpgadataflow.insert_dwc                 import InsertDWC
+from finn.transformation.fpgadataflow.insert_fifo                 import InsertFIFO
+from finn.transformation.fpgadataflow.insert_tlastmarker         import InsertTLastMarker
 
 ## Board Deployment
-from finn.util.basic 										   import pynq_part_map
-from finn.transformation.fpgadataflow.prepare_ip 		       import PrepareIP
-from finn.transformation.fpgadataflow.hlssynth_ip 			   import HLSSynthIP
-from finn.transformation.fpgadataflow.create_stitched_ip 	   import CreateStitchedIP
+from finn.util.basic                                            import pynq_part_map
+from finn.transformation.fpgadataflow.prepare_ip                import PrepareIP
+from finn.transformation.fpgadataflow.hlssynth_ip                import HLSSynthIP
+from finn.transformation.fpgadataflow.create_stitched_ip        import CreateStitchedIP
 from finn.transformation.fpgadataflow.replace_verilog_relpaths import ReplaceVerilogRelPaths
 
 from finn.transformation.fpgadataflow.make_pynq_proj   import MakePYNQProject
@@ -53,15 +53,15 @@ from finn.transformation.fpgadataflow.make_deployment  import DeployToPYNQ
 # ===================================================================
 
 def save(model,suffix):
-	model.save(build_dir + "cnv_" + suffix + ".onnx")
+    model.save(build_dir + "cnv_" + suffix + ".onnx")
 
 def load(suffix):
-	return ModelWrapper(build_dir+"cnv_+" suffix + ".onnx")
+    return ModelWrapper(build_dir+"cnv_+" suffix + ".onnx")
 
 def log(string):
-	print("=================================")
-	print("  "+string)
-	print("=================================\n\n")
+    print("=================================")
+    print("  "+string)
+    print("=================================\n\n")
 
 # ===================================================================
 # TRANSFORMATIONS
@@ -107,7 +107,7 @@ def hls_conversion(model, binary=True):
     model = model.transform(to_hls.InferStreamingMaxPool())
     model = model.transform(RemoveCNVtoFCFlatten())
     log("HLS Conversion finished")
-	save(model,"hls_conversion")
+    save(model,"hls_conversion")
     return model
 
 def create_dataflow_partition(model):
@@ -118,41 +118,66 @@ def create_dataflow_partition(model):
     sdp_node = parent_model.get_nodes_by_op_type("StreamingDataflowPartition")[0]
     sdp_node = getCustomOp(sdp_node)
     dataflow_model_filename = sdp_node.get_nodeattr("model")
-	dataflow_model = ModelWrapper(dataflow_model_filename)
+    dataflow_model = ModelWrapper(dataflow_model_filename)
     save(model,"dataflow_model")
     log("Dataflow partition created")
-    return parent_model, dataflow_model
+    return dataflow_model
 
 def folding(model):
     log("Tuning folding")
     fc_layers = model.get_nodes_by_op_type("StreamingFCLayer_Batch")
     # each tuple is (PE, SIMD, in_fifo_depth) for a layer
     folding = [
-        (8, 3, 256, "auto"),
-        (16, 16, 256, "auto"),
-        (8, 16, 256, "auto"),
-        (8, 16, 256, "block"),
-        (4, 8, 214, "auto"),
-        (1, 8, 2, "auto"),
-        (1, 2, 126, "distributed"),
-        (2, 2, 62, "block"),
-        (5, 1, 6, "distributed"),
+        (16, 3, 128),
+        (32, 32, 128),
+        (16, 32, 128),
+        (16, 32, 128),
+        (4, 32, 81),
+        (1, 32, 2),
+        (1, 4, 2),
+        (1, 8, 128),
+        (5, 1, 3),
     ]
-    for fcl, (pe, simd, ififodepth, ramstyle) in zip(fc_layers, folding):
+    for fcl, (pe, simd, ififodepth) in zip(fc_layers, folding):
         fcl_inst = getCustomOp(fcl)
         fcl_inst.set_nodeattr("PE", pe)
         fcl_inst.set_nodeattr("SIMD", simd)
         fcl_inst.set_nodeattr("inFIFODepth", ififodepth)
-        fcl_inst.set_nodeattr("ram_style", ramstyle)
 
     # use same SIMD values for the sliding window operators
     swg_layers = model.get_nodes_by_op_type("ConvolutionInputGenerator")
-    swg_idepth = [2, 51, 9, 106, 2, 2]
     for i in range(len(swg_layers)):
         swg_inst = getCustomOp(swg_layers[i])
         simd = folding[i][1]
         swg_inst.set_nodeattr("SIMD", simd)
-        swg_inst.set_nodeattr("inFIFODepth", swg_idepth[i])
+    # fc_layers = model.get_nodes_by_op_type("StreamingFCLayer_Batch")
+    # # each tuple is (PE, SIMD, in_fifo_depth) for a layer
+    # folding = [
+    #     (8, 3, 256, "auto"),
+    #     (16, 16, 256, "auto"),
+    #     (8, 16, 256, "auto"),
+    #     (8, 16, 256, "block"),
+    #     (4, 8, 214, "auto"),
+    #     (1, 8, 2, "auto"),
+    #     (1, 2, 126, "distributed"),
+    #     (2, 2, 62, "block"),
+    #     (5, 1, 6, "distributed"),
+    # ]
+    # for fcl, (pe, simd, ififodepth, ramstyle) in zip(fc_layers, folding):
+    #     fcl_inst = getCustomOp(fcl)
+    #     fcl_inst.set_nodeattr("PE", pe)
+    #     fcl_inst.set_nodeattr("SIMD", simd)
+    #     fcl_inst.set_nodeattr("inFIFODepth", ififodepth)
+    #     fcl_inst.set_nodeattr("ram_style", ramstyle)
+    #
+    # # use same SIMD values for the sliding window operators
+    # swg_layers = model.get_nodes_by_op_type("ConvolutionInputGenerator")
+    # swg_idepth = [2, 51, 9, 106, 2, 2]
+    # for i in range(len(swg_layers)):
+    #     swg_inst = getCustomOp(swg_layers[i])
+    #     simd = folding[i][1]
+    #     swg_inst.set_nodeattr("SIMD", simd)
+    #     swg_inst.set_nodeattr("inFIFODepth", swg_idepth[i])
 
     model = model.transform(InsertDWC())
     model = model.transform(InsertFIFO())
@@ -249,7 +274,7 @@ if __name__ == "__main__":
     model = tidy_up(model)
     model = streamline(model, binary)
     model = hls_conversion(model, binary)
-    parent_model, model = create_dataflow_partition(model)
+    model = create_dataflow_partition(model)
     model = folding(model)
     # Synthesis
     model = prepare_ip(model, fpga_part, target_clk_ns)
@@ -267,7 +292,7 @@ if __name__ == "__main__":
     # import pkg_resources as pk
     # import matplotlib.pyplot as plt
     # import numpy as np
-	#
+    #
     # # Loading the image to test
     # fn = pk.resource_filename("finn", "data/cifar10/cifar10-test-data-class3.npz")
     # x = np.load(fn)["arr_0"].astype(np.float32)
@@ -279,7 +304,7 @@ if __name__ == "__main__":
     # sdp_node = getCustomOp(sdp_node)
     # sdp_node.set_nodeattr("model", remote_exec_model)
     # parent_model.save(model,"dataflow_parent_with_remote_bitfile_exec")
-	#
+    #
     # # Execution of the nn on board
     # import numpy as np
     # from finn.core.onnx_exec import execute_onnx
@@ -291,16 +316,16 @@ if __name__ == "__main__":
     # logits = ret[oname].flatten()
     # prob = softmax(logits)
     # plt.bar(np.arange(10), prob)
-	#
+    #
     # # THROUGHPUT TESTS
     # from finn.core.throughput_test import throughput_test
-	#
+    #
     # child_model = ModelWrapper(sdp_node.get_nodeattr("model"))
     # res = throughput_test(child_model)
     # print("Network metrics:")
     # for key in res:
     #     print(str(key) + ": " + str(res[key]))
-	#
+    #
     # II = 64
     # # frequency in MHz
     # f_MHz = 50
