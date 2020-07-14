@@ -75,6 +75,7 @@ def tidy_up(model):
     model = model.transform(FoldConstants())
     model = model.transform(GiveUniqueNodeNames())
     model = model.transform(GiveReadableTensorNames())
+    model = model.transform(InferDataTypes())
     # model = model.transform(RemoveStaticGraphInputs())
     log("Basic transformations completed")
     save(model,"tidy")
@@ -83,12 +84,6 @@ def tidy_up(model):
 # Streamline
 def streamline(model, binary=True):
     log("Streamline transformations launched")
-    model = model.transform(Streamline())
-    model = model.transform(LowerConvsToMatMul())
-    model = model.transform(MakeMaxPoolNHWC())
-    model = model.transform(absorb.AbsorbTransposeIntoMultiThreshold())
-    if binary:
-        model = model.transform(ConvertBipolarMatMulToXnorPopcount())
     model = model.transform(Streamline())
     # model = model.transform(RemoveUnusedTensors())
     log("Streamline transformations completed")
@@ -103,9 +98,6 @@ def hls_conversion(model, binary=True):
     if binary:
         model = model.transform(to_hls.InferBinaryStreamingFCLayer(mem_mode))
     model = model.transform(to_hls.InferQuantizedStreamingFCLayer(mem_mode))
-    model = model.transform(to_hls.InferConvInpGen())
-    model = model.transform(to_hls.InferStreamingMaxPool())
-    model = model.transform(RemoveCNVtoFCFlatten())
     log("HLS Conversion finished")
     save(model,"hls_conversion")
     return model
@@ -126,59 +118,20 @@ def create_dataflow_partition(model):
 def folding(model):
     log("Tuning folding")
     fc_layers = model.get_nodes_by_op_type("StreamingFCLayer_Batch")
-    # each tuple is (PE, SIMD, in_fifo_depth) for a layer
-    folding = [
-        (16, 3, 128),
-        (32, 32, 128),
-        (16, 32, 128),
-        (16, 32, 128),
-        (4, 32, 81),
-        (1, 32, 2),
-        (1, 4, 2),
-        (1, 8, 128),
-        (5, 1, 3),
+    # (PE, SIMD, in_fifo_depth, out_fifo_depth, ramstyle) for each layer
+    config = [
+        (16, 49, 16, 64, "block"),
+        (8, 8, 64, 64, "auto"),
+        (8, 8, 64, 64, "auto"),
+        (10, 8, 64, 10, "distributed"),
     ]
-    for fcl, (pe, simd, ififodepth) in zip(fc_layers, folding):
+    for fcl, (pe, simd, ififo, ofifo, ramstyle) in zip(fc_layers, config):
         fcl_inst = getCustomOp(fcl)
         fcl_inst.set_nodeattr("PE", pe)
         fcl_inst.set_nodeattr("SIMD", simd)
-        fcl_inst.set_nodeattr("inFIFODepth", ififodepth)
-
-    # use same SIMD values for the sliding window operators
-    swg_layers = model.get_nodes_by_op_type("ConvolutionInputGenerator")
-    for i in range(len(swg_layers)):
-        swg_inst = getCustomOp(swg_layers[i])
-        simd = folding[i][1]
-        swg_inst.set_nodeattr("SIMD", simd)
-    # fc_layers = model.get_nodes_by_op_type("StreamingFCLayer_Batch")
-    # # each tuple is (PE, SIMD, in_fifo_depth) for a layer
-    # folding = [
-    #     (8, 3, 256, "auto"),
-    #     (16, 16, 256, "auto"),
-    #     (8, 16, 256, "auto"),
-    #     (8, 16, 256, "block"),
-    #     (4, 8, 214, "auto"),
-    #     (1, 8, 2, "auto"),
-    #     (1, 2, 126, "distributed"),
-    #     (2, 2, 62, "block"),
-    #     (5, 1, 6, "distributed"),
-    # ]
-    # for fcl, (pe, simd, ififodepth, ramstyle) in zip(fc_layers, folding):
-    #     fcl_inst = getCustomOp(fcl)
-    #     fcl_inst.set_nodeattr("PE", pe)
-    #     fcl_inst.set_nodeattr("SIMD", simd)
-    #     fcl_inst.set_nodeattr("inFIFODepth", ififodepth)
-    #     fcl_inst.set_nodeattr("ram_style", ramstyle)
-    #
-    # # use same SIMD values for the sliding window operators
-    # swg_layers = model.get_nodes_by_op_type("ConvolutionInputGenerator")
-    # swg_idepth = [2, 51, 9, 106, 2, 2]
-    # for i in range(len(swg_layers)):
-    #     swg_inst = getCustomOp(swg_layers[i])
-    #     simd = folding[i][1]
-    #     swg_inst.set_nodeattr("SIMD", simd)
-    #     swg_inst.set_nodeattr("inFIFODepth", swg_idepth[i])
-
+        fcl_inst.set_nodeattr("inFIFODepth", ififo)
+        fcl_inst.set_nodeattr("outFIFODepth", ofifo)
+        fcl_inst.set_nodeattr("ram_style", ramstyle)
     model = model.transform(InsertDWC())
     model = model.transform(InsertFIFO())
     model = model.transform(InsertTLastMarker())
@@ -256,8 +209,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Directory and model specification
-    build_dir = "/workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}/".format(args.acq, args.weq, args.inq)
-    model = ModelWrapper("/workspace/finn/onnx_experiments/QuantCNV_A{0}W{1}I{2}/QuantCNV_A{0}W{1}I{2}_E{3}.onnx".format(args.acq, args.weq, args.inq, args.epoch))
+    build_dir = "/workspace/finn/onnx_experiments/QuantTFC_A{0}W{1}I{2}/".format(args.acq, args.weq, args.inq)
+    model = ModelWrapper("/workspace/finn/onnx_experiments/QuantTFC_A{0}W{1}I{2}/QuantTFC_A{0}W{1}I{2}_E{3}.onnx".format(args.acq, args.weq, args.inq, args.epoch))
     binary = (args.acq == 1)
     # Synthesis info
     pynq_board = "Pynq-Z1"
@@ -289,23 +242,24 @@ if __name__ == "__main__":
     # # ==========================================================================
     # # TESTING EXECUTION ON BOARD
     # # ==========================================================================
-    # import pkg_resources as pk
-    # import matplotlib.pyplot as plt
-    # import numpy as np
     #
-    # # Loading the image to test
-    # fn = pk.resource_filename("finn", "data/cifar10/cifar10-test-data-class3.npz")
-    # x = np.load(fn)["arr_0"].astype(np.float32)
-    # x = x / 255
-    # # Setting the image as the last one
-    # parent_model = ModelWrapper(build_dir+"/cnv_dataflow.onnx")
-    # remote_exec_model = build_dir + "/cnv_deploy.onnx"
-    # sdp_node = parent_model.get_nodes_by_op_type("StreamingDataflowPartition")[0]
-    # sdp_node = getCustomOp(sdp_node)
-    # sdp_node.set_nodeattr("model", remote_exec_model)
+    # # Execution on the board and tests
+    # from pkgutil import get_data
+    # import onnx.numpy_helper as nph
+    # import matplotlib.pyplot as plt
+    #
+    # raw_i = get_data("finn", "data/onnx/mnist-conv/test_data_set_0/input_0.pb")
+    # x = nph.to_array(onnx.load_tensor_from_string(raw_i))
+    # # plt.imshow(x.reshape(28,28), cmap='gray') # Display an image of the MNIST dataset
+    # build_dir = "/home/qducasse/Desktop/nn_projects/finn/onnx/tfc_w1_a1_"
+    # parent_model = ModelWrapper(build_dir+"dataflow.onnx")
+    # sdp_node = parent_model.graph.node[2]
+    # remote_exec_model = build_dir + "deploy.onnx"
+    # getCustomOp(sdp_node).set_nodeattr("model", remote_exec_model)
     # parent_model.save(model,"dataflow_parent_with_remote_bitfile_exec")
     #
-    # # Execution of the nn on board
+    # ## EXECUTION
+    #
     # import numpy as np
     # from finn.core.onnx_exec import execute_onnx
     # iname = parent_model.graph.input[0].name
@@ -313,14 +267,22 @@ if __name__ == "__main__":
     # ishape = parent_model.get_tensor_shape(iname)
     # input_dict = {iname: x.reshape(ishape)}
     # ret = execute_onnx(parent_model, input_dict, True)
+    #
+    # def softmax(x):
+    #     """Compute softmax values for each sets of scores in x."""
+    #     e_x = np.exp(x - np.max(x))
+    #     return e_x / e_x.sum()
+    #
     # logits = ret[oname].flatten()
     # prob = softmax(logits)
+    #
     # plt.bar(np.arange(10), prob)
+    #
     #
     # # THROUGHPUT TESTS
     # from finn.core.throughput_test import throughput_test
     #
-    # child_model = ModelWrapper(sdp_node.get_nodeattr("model"))
+    # child_model = ModelWrapper(getCustomOp(sdp_node).get_nodeattr("model"))
     # res = throughput_test(child_model)
     # print("Network metrics:")
     # for key in res:
@@ -328,7 +290,7 @@ if __name__ == "__main__":
     #
     # II = 64
     # # frequency in MHz
-    # f_MHz = 50
+    # f_MHz = 100
     # # expected throughput in MFPS
     # expected_throughput = f_MHz / II
     # # measured throughput (FPS) from throughput test, converted to MFPS
