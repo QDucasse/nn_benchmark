@@ -56,7 +56,7 @@ def save(model,suffix):
     model.save(build_dir + "cnv_" + suffix + ".onnx")
 
 def load(suffix):
-    return ModelWrapper(build_dir+"cnv_+" suffix + ".onnx")
+    return ModelWrapper(build_dir+"cnv_" + suffix + ".onnx")
 
 def log(string):
     print("=================================")
@@ -86,7 +86,7 @@ def streamline(model, binary=True):
     model = model.transform(Streamline())
     model = model.transform(LowerConvsToMatMul())
     model = model.transform(MakeMaxPoolNHWC())
-    model = model.transform(absorb.AbsorbAddIntoMultiThreshold())
+    model = model.transform(absorb.AbsorbTransposeIntoMultiThreshold())
     if binary:
         model = model.transform(ConvertBipolarMatMulToXnorPopcount())
     model = model.transform(Streamline())
