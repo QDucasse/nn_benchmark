@@ -53,10 +53,10 @@ from finn.transformation.fpgadataflow.make_deployment  import DeployToPYNQ
 # ===================================================================
 
 def save(model,suffix):
-    model.save(build_dir + "cnv_" + suffix + ".onnx")
+    model.save(build_dir + "tfc_" + suffix + ".onnx")
 
 def load(suffix):
-    return ModelWrapper(build_dir+"cnv_" + suffix + ".onnx")
+    return ModelWrapper(build_dir+"tfc_" + suffix + ".onnx")
 
 def log(string):
     print("=================================")
@@ -119,6 +119,7 @@ def folding(model):
     log("Tuning folding")
     fc_layers = model.get_nodes_by_op_type("StreamingFCLayer_Batch")
     # (PE, SIMD, in_fifo_depth, out_fifo_depth, ramstyle) for each layer
+    # Test Divided by two the PE and in_fifo_depth
     config = [
         (16, 64, 16, 64, "block"),
         (8, 8, 64, 64, "auto"),
@@ -254,12 +255,10 @@ if __name__ == "__main__":
     from PIL import Image
     import torchvision.transforms.functional as TF
 
-    image = Image.open('/workspace/finn/onnx_experiments/img_MNIST.png')
+    image = Image.open('/workspace/finn/onnx_experiments/img_MNIST_grayscale.png')
     x = TF.to_tensor(image)
     x.unsqueeze_(0)
 
-    plt.imshow(x.reshape(32,32), cmap='gray') # Display an image of the MNIST dataset
-    plt.show()
     parent_model = load("dataflow_parent")
     sdp_node = parent_model.graph.node[2]
     remote_exec_model = build_dir + "tfc_deploy.onnx"
@@ -274,7 +273,7 @@ if __name__ == "__main__":
     iname = parent_model.graph.input[0].name
     oname = parent_model.graph.output[0].name
     ishape = parent_model.get_tensor_shape(iname)
-    input_dict = {iname: x.reshape(ishape)}
+    input_dict = {iname: x.numpy()[0].reshape(ishape)}
     ret = execute_onnx(parent_model, input_dict, True)
 
     def softmax(x):

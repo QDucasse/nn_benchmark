@@ -20,6 +20,10 @@ plt.imshow(x.numpy()[0], cmap='gray')
 plt.show()
 torchvision.utils.save_image(x, "data/img_MNIST.png")
 
+from PIL import Image
+img = Image.open("data/img_MNIST.png").convert("L")
+img.save("data/img_MNIST_grayscale.png")
+
 # CIFAR10
 # dataset = torchvision.datasets.MNIST(
 #     root='data/',
