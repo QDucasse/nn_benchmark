@@ -226,7 +226,7 @@ if __name__ == "__main__":
     port = "22"
     username = "xilinx"
     password = "xilinx"
-    target_dir = "/home/xilinx/finn_cnv_end2end_example"
+    target_dir = "/home/xilinx/finn_tfc_experiment"
 
     # Transformations
     model = tidy_up(model)

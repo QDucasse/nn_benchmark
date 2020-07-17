@@ -9,7 +9,6 @@ import sys
 from nn_benchmark.core import ObjDict, Trainer
 from nn_benchmark.networks import QuantTFC, QuantCNV, QuantMobilenetV1
 
-
 if __name__ == "__main__":
     acq_list = [2, 4, 8, 16, 32]
     weq_list = [2, 4, 8, 16, 32]
@@ -24,7 +23,7 @@ if __name__ == "__main__":
             'visualize': False, 'acq': None, 'weq': None, 'inq': None, 'onnx': False}
     args = ObjDict(args)
 
-    # QuantTFC on MNIST
+    # QuantTFC on Fashion-MNIST
     args.network = "QuantTFC"
     args.dataset = "FASHION-MNIST"
     for acq, weq, inq in zip(acq_list, weq_list, inq_list):
