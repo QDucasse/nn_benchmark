@@ -36,11 +36,10 @@ from finn.transformation.fpgadataflow.insert_fifo                 import InsertF
 from finn.transformation.fpgadataflow.insert_tlastmarker         import InsertTLastMarker
 
 ## Board Deployment
-from finn.util.basic                                            import pynq_part_map
-from finn.transformation.fpgadataflow.prepare_starve.
-Slaship                import PrepareIP
-from finn.transformation.fpgadataflow.hlssynth_ip                import HLSSynthIP
-from finn.transformation.fpgadataflow.create_stitched_ip        import CreateStitchedIP
+from finn.util.basic                                           import pynq_part_map
+from finn.transformation.fpgadataflow.prepare_ip               import PrepareIP
+from finn.transformation.fpgadataflow.hlssynth_ip              import HLSSynthIP
+from finn.transformation.fpgadataflow.create_stitched_ip       import CreateStitchedIP
 from finn.transformation.fpgadataflow.replace_verilog_relpaths import ReplaceVerilogRelPaths
 
 from finn.transformation.fpgadataflow.make_pynq_proj   import MakePYNQProject
@@ -125,7 +124,7 @@ def folding(model):
         (8, 32, 8, 32, "block"),
         (4, 4, 32, 32, "auto"),
         (4, 4, 32, 32, "auto"),
-        (5, 4, 32, 5, "distributed"),
+        (5, 4, 32, 10, "distributed"),
     ]
     for fcl, (pe, simd, ififo, ofifo, ramstyle) in zip(fc_layers, config):
         fcl_inst = getCustomOp(fcl)
