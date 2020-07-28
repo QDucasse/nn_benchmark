@@ -124,7 +124,7 @@ def folding(model):
         (8, 32, 8, 32, "block"),
         (4, 4, 32, 32, "auto"),
         (4, 4, 32, 32, "auto"),
-        (5, 4, 32, 10, "distributed"),
+        (5, 4, 32, 5, "distributed"),
     ]
     for fcl, (pe, simd, ififo, ofifo, ramstyle) in zip(fc_layers, config):
         fcl_inst = getCustomOp(fcl)
