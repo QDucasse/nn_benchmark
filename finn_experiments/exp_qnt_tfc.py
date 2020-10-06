@@ -28,19 +28,10 @@ from finn.transformation.streamline.reorder          import MakeMaxPoolNHWC
 from finn.transformation.bipolar_to_xnor             import ConvertBipolarMatMulToXnorPopcount
 from finn.transformation.streamline.round_thresholds import RoundAndClipThresholds
 
-## HLS Conversion
+## HLS Conversion and synthesis
 from finn.transformation.fpgadataflow.make_zynq_proj import ZynqBuild
 
 ## Board Deployment
-from finn.util.basic                                           import pynq_part_map
-from finn.transformation.fpgadataflow.prepare_ip               import PrepareIP
-from finn.transformation.fpgadataflow.hlssynth_ip              import HLSSynthIP
-from finn.transformation.fpgadataflow.create_stitched_ip       import CreateStitchedIP
-from finn.transformation.fpgadataflow.replace_verilog_relpaths import ReplaceVerilogRelPaths
-
-from finn.transformation.fpgadataflow.make_pynq_proj   import MakePYNQProject
-from finn.transformation.fpgadataflow.synth_pynq_proj  import SynthPYNQProject
-from finn.transformation.fpgadataflow.make_pynq_driver import MakePYNQDriver
 from finn.transformation.fpgadataflow.make_deployment  import DeployToPYNQ
 
 
@@ -149,38 +140,11 @@ def folding(model):
     save(model,"fold_factors")
     return model
 
-def stitch_ip(model, fpga_part):
-    log("Stitching IP blocks")
-    model = model.transform(CreateStitchedIP(fpga_part))
-    log("IP blocks stitched")
-    save(model,"stitch")
-    return model
-
 # Hardware build
 def create_IP_and_synthesis(model, platform, period_ns):
+    log("Creating Project and synthesis")
     model = model.transform(ZynqBuild(platform = platform, period_ns = period_ns))
-
-# PYNQ Project, Driver and Deployment
-def create_project(model, pynq_board):
-    log("PYNQ Project creation launched")
-    model = model.transform(MakePYNQProject(pynq_board))
-    log("PYNQ project created")
-    vivado_proj = model.get_metadata_prop("vivado_pynq_proj")
-    print("Vivado synthesis project is at %s/resizer.xpr" % vivado_proj)
-    return model
-
-def synthesis(model):
-    log("Synthesis, Place and Route launched")
-    model = model.transform(SynthPYNQProject())
-    log("Synthesis, Place and Route completed")
-    save(model,"post_synthesis")
-    return model
-
-def gen_driver(model):
-    log("Driver generation launched")
-    model = model.transform(MakePYNQDriver())
-    log("Driver generation completed")
-    return model
+    log("Synthesis completed!")
 
 def deploy(model, ip, port, username, password, target_dir):
     log("Deployment launched")
@@ -228,9 +192,6 @@ if __name__ == "__main__":
     # Synthesis
     model = create_IP_and_synthesis(pynq_board, target_clk_ns)
     # PYNQ Deployment
-    model = create_project(model, pynq_board)
-    model = synthesis(model)
-    model = gen_driver(model)
     model = deploy(model, ip, port, username, password, target_dir)
 
     # ==========================================================================
