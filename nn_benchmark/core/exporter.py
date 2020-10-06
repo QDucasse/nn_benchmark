@@ -13,7 +13,7 @@ import brevitas.onnx as bo
 
 class Exporter(object):
 
-    def export_onnx(self, model, output_dir_path, act_bit_width=4, weight_bit_width=4, input_bit_width=8, in_channels=3, epoch=10, input_tensor=None, torch_onnx_kwargs={}):
+    def export_onnx(self, model, output_dir_path, act_bit_width=4, weight_bit_width=4, input_bit_width=8, in_channels=3, epoch=10, input_tensor=None):
         '''Export the model in ONNX format. A different export is provided is the
            network is a quantized one because the quantizations need to be stored as
            specific ONNX attributes'''
@@ -21,7 +21,7 @@ class Exporter(object):
             self.quant_export(model=model, output_dir_path=output_dir_path,
                               act_bit_width=act_bit_width, weight_bit_width=weight_bit_width,
                               input_bit_width=input_bit_width, in_channels=in_channels, epoch=epoch,
-                              input_tensor=input_tensor, torch_onnx_kwargs=torch_onnx_kwargs)
+                              input_tensor=input_tensor)
         else:
             self.base_export(model=model, output_dir_path=output_dir_path, in_channels=in_channels)
 
@@ -42,8 +42,7 @@ class Exporter(object):
         bo.export_finn_onnx(module=model,
                             input_shape=(1, in_channels, 32, 32),
                             export_path=output_dir_path +"/"+ model_name_with_attr + ".onnx",
-                            input_t=input_tensor,
-                            torch_onnx_kwargs=torch_onnx_kwargs)
+                            input_t=input_tensor)
 
 if __name__ == "__main__":
     # from finn.util.test import get_test_model_trained
