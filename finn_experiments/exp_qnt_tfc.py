@@ -21,19 +21,15 @@ from finn.transformation.fold_constants         import FoldConstants
 
 ## Streamline Transformations
 import finn.transformation.streamline.absorb as absorb
+from finn.transformation.streamline.reorder          import MoveScalarLinearPastInvariants
 from finn.transformation.lower_convs_to_matmul       import LowerConvsToMatMul
 from finn.transformation.streamline                  import Streamline
 from finn.transformation.streamline.reorder          import MakeMaxPoolNHWC
-from finn.transformation.bipolar_to_xnor              import ConvertBipolarMatMulToXnorPopcount
+from finn.transformation.bipolar_to_xnor             import ConvertBipolarMatMulToXnorPopcount
 from finn.transformation.streamline.round_thresholds import RoundAndClipThresholds
 
 ## HLS Conversion
-import finn.transformation.fpgadataflow.convert_to_hls_layers as to_hls
-from finn.transformation.move_reshape                           import RemoveCNVtoFCFlatten
-from finn.transformation.fpgadataflow.create_dataflow_partition import CreateDataflowPartition
-from finn.transformation.fpgadataflow.insert_dwc                 import InsertDWC
-from finn.transformation.fpgadataflow.insert_fifo                 import InsertFIFO
-from finn.transformation.fpgadataflow.insert_tlastmarker         import InsertTLastMarker
+from finn.transformation.fpgadataflow.make_zynq_proj import ZynqBuild
 
 ## Board Deployment
 from finn.util.basic                                           import pynq_part_map
@@ -84,8 +80,17 @@ def tidy_up(model):
 # Streamline
 def streamline(model, binary=True):
     log("Streamline transformations launched")
+    model = model.transform(MoveScalarLinearPastInvariants())
     model = model.transform(Streamline())
-    # model = model.transform(RemoveUnusedTensors())
+    # Absorb add and mul in thresholds
+    model = model.transform(absorb.AbsorbAddIntoMultiThreshold())
+    model = model.transform(absorb.AbsorbMulIntoMultiThreshold())
+    # Absorb add-mul in top-k
+    model = model.transform(absorb.AbsorbScalarMulAddIntoTopK())
+    model = model.transform(RoundAndClipThresholds())
+    # Tidy-up
+    model = model.transform(InferDataLayouts())
+    model = model.transform(RemoveUnusedTensors())
     log("Streamline transformations completed")
     save(model,"streamlined")
     return model
@@ -144,29 +149,16 @@ def folding(model):
     save(model,"fold_factors")
     return model
 
-# Generate IP
-def prepare_ip(model, fpga_part, target_clk_ns):
-    log("Preparing IP blocks generation")
-    model = model.transform(GiveUniqueNodeNames())
-    model = model.transform(PrepareIP(fpga_part, target_clk_ns))
-    save(model,"ip_preparation")
-    log("IP blocks preparation completed")
-    return model
-
-def synthetize_ip(model):
-    log("Synthesizing IP blocks")
-    model = model.transform(HLSSynthIP())
-    model = model.transform(ReplaceVerilogRelPaths())
-    log("IP blocks synthesized")
-    save(model,"ip_blocks")
-    return model
-
 def stitch_ip(model, fpga_part):
     log("Stitching IP blocks")
     model = model.transform(CreateStitchedIP(fpga_part))
     log("IP blocks stitched")
     save(model,"stitch")
     return model
+
+# Hardware build
+def create_IP_and_synthesis(model, platform, period_ns):
+    model = model.transform(ZynqBuild(platform = platform, period_ns = period_ns))
 
 # PYNQ Project, Driver and Deployment
 def create_project(model, pynq_board):
@@ -210,12 +202,11 @@ if __name__ == "__main__":
     parser.add_argument("--acq", type=int)
     parser.add_argument("--weq", type=int)
     parser.add_argument("--inq", type=int)
-    parser.add_argument("--epoch", type=int)
     args = parser.parse_args()
 
     # Directory and model specification
     build_dir = "/workspace/finn/onnx_experiments/QuantTFC_A{0}W{1}I{2}/".format(args.acq, args.weq, args.inq)
-    model = ModelWrapper("/workspace/finn/onnx_experiments/QuantTFC_A{0}W{1}I{2}/QuantTFC_A{0}W{1}I{2}_E{3}.onnx".format(args.acq, args.weq, args.inq, args.epoch))
+    model = ModelWrapper("/workspace/finn/onnx_experiments/QuantTFC_A{0}W{1}I{2}/QuantTFC_A{0}W{1}I{2}_E40.onnx".format(args.acq, args.weq, args.inq))
     binary = (args.acq == 1)
     # Synthesis info
     pynq_board = "Pynq-Z1"
@@ -235,9 +226,7 @@ if __name__ == "__main__":
     model = create_dataflow_partition(model)
     model = folding(model)
     # Synthesis
-    model = prepare_ip(model, fpga_part, target_clk_ns)
-    model = synthetize_ip(model)
-    model = stitch_ip(model, fpga_part)
+    model = create_IP_and_synthesis(pynq_board, target_clk_ns)
     # PYNQ Deployment
     model = create_project(model, pynq_board)
     model = synthesis(model)
@@ -305,3 +294,6 @@ if __name__ == "__main__":
     measured_throughput = res["throughput[images/s]"] * 0.000001
     # peformance
     print("We reach approximately " + str(round((measured_throughput / expected_throughput)*100)) + "% of the ideal performance.")
+
+
+    # Need to copy the different files to save them
