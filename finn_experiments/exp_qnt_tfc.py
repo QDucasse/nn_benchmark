@@ -14,11 +14,12 @@ from finn.custom_op.registry import getCustomOp
 
 ## Basic Transformations
 from finn.transformation.double_to_single_float import DoubleToSingleFloat
-from finn.transformation.general                 import GiveReadableTensorNames, GiveUniqueNodeNames # RemoveStaticGraphInputs
+from finn.transformation.general                import GiveReadableTensorNames, GiveUniqueNodeNames # RemoveStaticGraphInputs
 from finn.transformation.infer_datatypes        import InferDataTypes
-from finn.transformation.infer_shapes             import InferShapes
+from finn.transformation.infer_shapes           import InferShapes
 from finn.transformation.fold_constants         import FoldConstants
-
+from finn.transformation.infer_data_layouts     import InferDataLayouts
+from finn.transformation.general                import RemoveUnusedTensors
 ## Streamline Transformations
 import finn.transformation.streamline.absorb as absorb
 from finn.transformation.streamline.reorder          import MoveScalarLinearPastInvariants
@@ -29,10 +30,13 @@ from finn.transformation.bipolar_to_xnor             import ConvertBipolarMatMul
 from finn.transformation.streamline.round_thresholds import RoundAndClipThresholds
 
 ## HLS Conversion and synthesis
-from finn.transformation.fpgadataflow.make_zynq_proj import ZynqBuild
+import finn.transformation.fpgadataflow.convert_to_hls_layers as to_hls
+from finn.transformation.fpgadataflow.create_dataflow_partition import CreateDataflowPartition
+from finn.transformation.fpgadataflow.make_zynq_proj            import ZynqBuild
 
 ## Board Deployment
-from finn.transformation.fpgadataflow.make_deployment  import DeployToPYNQ
+from finn.util.basic import pynq_part_map
+from finn.transformation.fpgadataflow.make_deployment import DeployToPYNQ
 
 
 # ===================================================================
@@ -94,6 +98,10 @@ def hls_conversion(model, binary=True):
     if binary:
         model = model.transform(to_hls.InferBinaryStreamingFCLayer(mem_mode))
     model = model.transform(to_hls.InferQuantizedStreamingFCLayer(mem_mode))
+    # TopK to LabelSelect
+    model = model.transform(to_hls.InferLabelSelectLayer())
+    # input quantization (if any) to standalone thresholding
+    model = model.transform(to_hls.InferThresholdingLayer())
     log("HLS Conversion finished")
     save(model,"hls_conversion")
     return model
@@ -132,10 +140,10 @@ def folding(model):
         print("MW="+str(fcl_inst.get_nodeattr("MW")))
         print("SIMD="+str(fcl_inst.get_nodeattr("SIMD")))
         print("---")
-    model = model.transform(InsertDWC())
-    model = model.transform(InsertFIFO())
-    model = model.transform(InsertTLastMarker())
-    model = model.transform(GiveUniqueNodeNames())
+    # model = model.transform(InsertDWC())
+    # model = model.transform(InsertFIFO())
+    # model = model.transform(InsertTLastMarker())
+    # model = model.transform(GiveUniqueNodeNames())
     log("Folding completed")
     save(model,"fold_factors")
     return model
@@ -190,7 +198,7 @@ if __name__ == "__main__":
     model = create_dataflow_partition(model)
     model = folding(model)
     # Synthesis
-    model = create_IP_and_synthesis(pynq_board, target_clk_ns)
+    model = create_IP_and_synthesis(model, pynq_board, target_clk_ns)
     # PYNQ Deployment
     model = deploy(model, ip, port, username, password, target_dir)
 
