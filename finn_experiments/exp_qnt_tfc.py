@@ -251,7 +251,7 @@ if __name__ == "__main__":
     from finn.core.throughput_test import throughput_test_remote
 
     child_model = ModelWrapper(getCustomOp(sdp_node).get_nodeattr("model"))
-    res = throughput_test(child_model,batchsize=100)
+    res = throughput_test_remote(child_model,batchsize=100)
     print("Network metrics:")
     for key in res:
         print(str(key) + ": " + str(res[key]))
