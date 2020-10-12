@@ -192,14 +192,15 @@ if __name__ == "__main__":
     password = "xilinx"
     target_dir = "/home/xilinx/finn_tfc_experiment"
 
-    # Transformations
-    model = tidy_up(model)
-    model = streamline(model, binary)
-    model = hls_conversion(model, binary)
-    model = create_dataflow_partition(model)
-    model = folding(model)
-    # Synthesis
-    model = create_IP_and_synthesis(model, pynq_board, target_clk_ns)
+    # # Transformations
+    # model = tidy_up(model)
+    # model = streamline(model, binary)
+    # model = hls_conversion(model, binary)
+    # model = create_dataflow_partition(model)
+    # model = folding(model)
+    # # Synthesis
+    # model = create_IP_and_synthesis(model, pynq_board, target_clk_ns)
+    model = load("post_synthesis")
     # PYNQ Deployment
     model = deploy(model, ip, port, username, password, target_dir)
 
@@ -247,10 +248,10 @@ if __name__ == "__main__":
 
 
     # THROUGHPUT TESTS
-    from finn.core.throughput_test import throughput_test
+    from finn.core.throughput_test import throughput_test_remote
 
     child_model = ModelWrapper(getCustomOp(sdp_node).get_nodeattr("model"))
-    res = throughput_test(child_model)
+    res = throughput_test(child_model,batchsize=100)
     print("Network metrics:")
     for key in res:
         print(str(key) + ": " + str(res[key]))
