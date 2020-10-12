@@ -153,10 +153,11 @@ def create_IP_and_synthesis(model, platform, period_ns):
     log("Creating Project and synthesis")
     model = model.transform(ZynqBuild(platform = platform, period_ns = period_ns))
     log("Synthesis completed!")
+    save(model,"post_synthesis")
+    return model
 
 def deploy(model, ip, port, username, password, target_dir):
     log("Deployment launched")
-
     model = model.transform(DeployToPYNQ(ip, port, username, password, target_dir))
     log("Deployment completed")
     save(model,"deploy")
