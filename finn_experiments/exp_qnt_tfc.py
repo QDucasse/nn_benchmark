@@ -192,15 +192,15 @@ if __name__ == "__main__":
     password = "xilinx"
     target_dir = "/home/xilinx/finn_tfc_experiment"
 
-    # # Transformations
-    # model = tidy_up(model)
-    # model = streamline(model, binary)
-    # model = hls_conversion(model, binary)
-    # model = create_dataflow_partition(model)
-    # model = folding(model)
-    # # Synthesis
-    # model = create_IP_and_synthesis(model, pynq_board, target_clk_ns)
-    model = load("post_synthesis")
+    # Transformations
+    model = tidy_up(model)
+    model = streamline(model, binary)
+    model = hls_conversion(model, binary)
+    model = create_dataflow_partition(model)
+    model = folding(model)
+    # Synthesis
+    model = create_IP_and_synthesis(model, pynq_board, target_clk_ns)
+    # model = load("post_synthesis")
     # PYNQ Deployment
     model = deploy(model, ip, port, username, password, target_dir)
 
@@ -228,23 +228,23 @@ if __name__ == "__main__":
 
     ## EXECUTION
 
-    import numpy as np
-    from finn.core.onnx_exec import execute_onnx
-    iname = parent_model.graph.input[0].name
-    oname = parent_model.graph.output[0].name
-    ishape = parent_model.get_tensor_shape(iname)
-    input_dict = {iname: x.numpy()[0].reshape(ishape)}
-    ret = execute_onnx(parent_model, input_dict, True)
-
-    def softmax(x):
-        """Compute softmax values for each sets of scores in x."""
-        e_x = np.exp(x - np.max(x))
-        return e_x / e_x.sum()
-
-    logits = ret[oname].flatten()
-    prob = softmax(logits)
-
-    plt.bar(np.arange(10), prob)
+    # import numpy as np
+    # from finn.core.onnx_exec import execute_onnx
+    # iname = parent_model.graph.input[0].name
+    # oname = parent_model.graph.output[0].name
+    # ishape = parent_model.get_tensor_shape(iname)
+    # input_dict = {iname: x.numpy()[0].reshape(ishape)}
+    # ret = execute_onnx(parent_model, input_dict, True)
+    #
+    # def softmax(x):
+    #     """Compute softmax values for each sets of scores in x."""
+    #     e_x = np.exp(x - np.max(x))
+    #     return e_x / e_x.sum()
+    #
+    # logits = ret[oname].flatten()
+    # prob = softmax(logits)
+    #
+    # plt.bar(np.arange(10), prob)
 
 
     # THROUGHPUT TESTS
