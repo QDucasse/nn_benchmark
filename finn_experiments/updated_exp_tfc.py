@@ -244,6 +244,8 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from PIL import Image
     import torchvision.transforms.functional as TF
+    import shutil
+    import os
 
     image = Image.open('/workspace/finn/onnx_experiments/img_MNIST_grayscale.png')
     x = TF.to_tensor(image)
@@ -261,8 +263,11 @@ if __name__ == "__main__":
     child_model = ModelWrapper(getCustomOp(sdp_node).get_nodeattr("model"))
     res = throughput_test_remote(child_model,batchsize=10000)
     print("Network metrics:")
-    for key in res:
-        print(str(key) + ": " + str(res[key]))
+    with open(build_dir+"res.txt","w") as f:
+        for key in res:
+            print(str(key) + ": " + str(res[key]))
+            f.write(str(key) + ": " + str(res[key]) + "\n")
+
 
     II = 64
     # frequency in MHz
@@ -274,5 +279,14 @@ if __name__ == "__main__":
     # peformance
     print("We reach approximately " + str(round((measured_throughput / expected_throughput)*100)) + "% of the ideal performance.")
 
+    with open(build_dir+"res.txt","a") as f:
+        f.write("We reach approximately " + str(round((measured_throughput / expected_throughput)*100)) + "% of the ideal performance." + "\n")
+
+
+    finn_dev_files = os.listdir("/tmp/finn_dev_quentin/")
+    for file in finn_dev_files:
+        if file.startswith("vivado_zynq"):
+            vivado_zynq_build = file
+    shutil.move("/tmp/finn_dev_quentin/"+vivado_zynq_build, build_dir+"vivado_proj/")
 
     # Need to copy the different files to save them
