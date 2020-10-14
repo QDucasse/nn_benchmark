@@ -25,7 +25,7 @@ if __name__ == "__main__":
             else:
                 inq = 32
             # Load correct model
-            tfc = QuantTFC(in_channels=1, weight_bit_width=weq, act_bit_width=acq, input_bit_width=inq)
+            tfc = QuantTFC(in_channels=1, weight_bit_width=weq, act_bit_width=acq, in_bit_width=inq)
             tfc_model = "/workspace/finn/trained_models/QuantTFC_A{0}W{1}I{2}/checkpoints/best.tar".format(acq, weq, inq)
             package = torch.load(tfc_model, map_location='cpu')
             model_state_dict = package['state_dict']
