@@ -27,11 +27,10 @@ from finn.transformation.insert_topk import InsertTopK
 ## Streamline Transformations
 import finn.transformation.streamline.absorb as absorb
 from finn.transformation.streamline.reorder          import MoveScalarLinearPastInvariants
-from finn.transformation.lower_convs_to_matmul       import LowerConvsToMatMul
 from finn.transformation.streamline                  import Streamline
-from finn.transformation.streamline.reorder          import MakeMaxPoolNHWC
-from finn.transformation.bipolar_to_xnor             import ConvertBipolarMatMulToXnorPopcount
 from finn.transformation.streamline.round_thresholds import RoundAndClipThresholds
+from finn.transformation.infer_data_layouts          import InferDataLayouts
+from finn.transformation.general                     import RemoveUnusedTensors
 
 ## HLS Conversion and synthesis
 import finn.transformation.fpgadataflow.convert_to_hls_layers as to_hls
@@ -49,9 +48,10 @@ from finn.transformation.fpgadataflow.make_deployment import DeployToPYNQ
 
 def save(model,suffix):
     global name
-    model.save(build_dir + name "_" + suffix + ".onnx")
+    model.save(build_dir + name + "_" + suffix + ".onnx")
 
 def load(suffix):
+    global name
     return ModelWrapper(build_dir+ name + "_" + suffix + ".onnx")
 
 def log(string):
@@ -164,7 +164,7 @@ def folding(model):
     # (PE, SIMD, in_fifo_depth, out_fifo_depth, ramstyle) for each layer
     # Test Divided by two the PE and in_fifo_depth
     config = [
-        (16, 49, 16, 64, "block"),
+        (16, 64, 16, 64, "block"),
         (8, 8, 64, 64, "auto"),
         (8, 8, 64, 64, "auto"),
         (10, 8, 64, 10, "distributed"),
@@ -259,7 +259,7 @@ if __name__ == "__main__":
     from finn.core.throughput_test import throughput_test_remote
 
     child_model = ModelWrapper(getCustomOp(sdp_node).get_nodeattr("model"))
-    res = throughput_test_remote(child_model,batchsize=100)
+    res = throughput_test_remote(child_model,batchsize=10000)
     print("Network metrics:")
     for key in res:
         print(str(key) + ": " + str(res[key]))
