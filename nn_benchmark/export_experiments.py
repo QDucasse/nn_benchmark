@@ -8,7 +8,7 @@
 import sys
 import torch
 from nn_benchmark.core import Exporter
-from nn_benchmark.networks import QuantTFC, QuantCNV
+from nn_benchmark.networks import QuantTFC
 
 if __name__ == "__main__":
     acq_list = [2, 3, 4, 5, 6, 7, 8, 16, 32]
@@ -25,7 +25,7 @@ if __name__ == "__main__":
             else:
                 inq = 32
             # Load correct model
-            tfc = QuantTFC(in_channels=1)
+            tfc = QuantTFC(in_channels=1, weight_bit_width=weq, act_bit_width=acq, input_bit_width=inq)
             tfc_model = "/workspace/finn/trained_models/QuantTFC_A{0}W{1}I{2}/checkpoints/best.tar".format(acq, weq, inq)
             package = torch.load(tfc_model, map_location='cpu')
             model_state_dict = package['state_dict']

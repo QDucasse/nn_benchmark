@@ -1,8 +1,9 @@
 #!/bin/bash
-for ACQ in 2 4 8 16 32
+for ACQ in 2 3 4 5 6 7 8 16 32
 do
-  WEQ=$ACQ
-  if (($ACQ <= 8)); then
+  for WEQ in 2 3 4 5 6 7 8 16 32
+  do
+  if (($ACQ <= 8)) & (($WEQ <= 8)); then
     INQ=8
   else
     INQ=32
@@ -21,4 +22,5 @@ do
       --acq $ACQ \
       --weq $WEQ \
       --inq $INQ
+  done
 done
