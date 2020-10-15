@@ -164,10 +164,10 @@ def folding(model):
     # (PE, SIMD, in_fifo_depth, out_fifo_depth, ramstyle) for each layer
     # Test Divided by two the PE and in_fifo_depth
     config = [
-        (16, 64, 16, 64, "block"),
-        (8, 8, 64, 64, "auto"),
-        (8, 8, 64, 64, "auto"),
-        (10, 8, 64, 10, "distributed"),
+        (8, 32, 8, 32, "block"),
+        (4, 4, 32, 32, "auto"),
+        (4, 4, 32, 32, "auto"),
+        (5, 4, 32, 5, "distributed"),
     ]
     for fcl, (pe, simd, ififo, ofifo, ramstyle) in zip(fc_layers, config):
         fcl_inst = getCustomOp(fcl)
