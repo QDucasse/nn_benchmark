@@ -148,7 +148,7 @@ def hls_conversion(model, binary=True):
 def create_dataflow_partition(model):
     log("Creating Dataflow Partition")
     parent_model = model.transform(CreateDataflowPartition())
-    save(parent_model,"dataflow_parent")
+    save(parent_model,"5_dataflow_parent")
 
     sdp_node = parent_model.get_nodes_by_op_type("StreamingDataflowPartition")[0]
     sdp_node = getCustomOp(sdp_node)
