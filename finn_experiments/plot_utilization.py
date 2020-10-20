@@ -43,7 +43,7 @@ for key in keys_of_interest:
 
 # Plot data
 
-for key in keys_of_intrest:
+for key in keys_of_interest:
     plotting_dataframes[key].T.plot.bar(rot=45)
     plt.ylabel("Utilization [%]")
     plt.tight_layout()

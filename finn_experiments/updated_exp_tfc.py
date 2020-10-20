@@ -223,14 +223,14 @@ if __name__ == "__main__":
     target_dir = "/home/xilinx/finn_tfc_experiment"
 
     # Transformations
-    model = tidy_up(model)
-    model = streamline(model, binary)
-    model = hls_conversion(model, binary)
-    model = create_dataflow_partition(model)
-    model = folding(model)
-    # Synthesis
-    model = create_IP_and_synthesis(model, pynq_board, target_clk_ns)
-    # model = load("post_synthesis")
+    # model = tidy_up(model)
+    # model = streamline(model, binary)
+    # model = hls_conversion(model, binary)
+    # model = create_dataflow_partition(model)
+    # model = folding(model)
+    # # Synthesis
+    # model = create_IP_and_synthesis(model, pynq_board, target_clk_ns)
+    model = load("post_synthesis")
     # PYNQ Deployment
     model = deploy(model, ip, port, username, password, target_dir)
 
@@ -253,7 +253,7 @@ if __name__ == "__main__":
 
     parent_model = load("dataflow_parent")
     sdp_node = parent_model.graph.node[2]
-    remote_exec_model = build_dir + "tfc_deploy.onnx"
+    remote_exec_model = build_dir + "8_deploy.onnx"
     getCustomOp(sdp_node).set_nodeattr("model", remote_exec_model)
     save(parent_model,"9_dataflow_parent_with_remote_bitfile_exec")
 

@@ -26,9 +26,10 @@ if __name__ == "__main__":
         with open(vivado_proj + report_path) as f:
             content = f.readlines()
 
-
+        # IMPLEMENTATION COMPLETED!
         top_levels_to_parse = ["1. Slice Logic", "2. Slice Logic Distribution", "3. Memory", "4. DSP", "6. Clocking"]
-
+        # SYNTHESIS ONLY
+        # top_levels_to_parse = ["1. Slice Logic", "2. Memory", "3. DSP", "5. Clocking"]
         utilization_data = {}
         top_level_key = ""
         parse_enable = False
