@@ -208,8 +208,8 @@ if __name__ == "__main__":
 
     name = "QuantTFC_A{0}W{1}I{2}".format(args.acq, args.weq, args.inq)
     # Directory and model specification
-    build_dir = "/workspace/finn/onnx_experiments/QuantTFC_A{0}W{1}I{2}/".format(args.acq, args.weq, args.inq)
-    model = ModelWrapper("/workspace/finn/onnx_experiments/QuantTFC_A{0}W{1}I{2}/QuantTFC_A{0}W{1}I{2}_E40.onnx".format(args.acq, args.weq, args.inq))
+    build_dir = "/workspace/finn/tested_networks/QuantTFC_A{0}W{1}I{2}/".format(args.acq, args.weq, args.inq)
+    model = ModelWrapper("/workspace/finn/tested_networks/QuantTFC_A{0}W{1}I{2}/QuantTFC_A{0}W{1}I{2}_E40.onnx".format(args.acq, args.weq, args.inq))
     binary = (args.acq == 1)
     # Synthesis info
     pynq_board = "Pynq-Z1"
