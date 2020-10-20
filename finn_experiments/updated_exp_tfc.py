@@ -230,7 +230,7 @@ if __name__ == "__main__":
     # model = folding(model)
     # # Synthesis
     # model = create_IP_and_synthesis(model, pynq_board, target_clk_ns)
-    model = load("post_synthesis")
+    model = load("7_post_synthesis")
     # PYNQ Deployment
     model = deploy(model, ip, port, username, password, target_dir)
 
@@ -247,21 +247,19 @@ if __name__ == "__main__":
     import shutil
     import os
 
-    image = Image.open('/workspace/finn/onnx_experiments/img_MNIST_grayscale.png')
-    x = TF.to_tensor(image)
-    x.unsqueeze_(0)
-
-    parent_model = load("dataflow_parent")
-    sdp_node = parent_model.graph.node[2]
-    remote_exec_model = build_dir + "8_deploy.onnx"
-    getCustomOp(sdp_node).set_nodeattr("model", remote_exec_model)
-    save(parent_model,"9_dataflow_parent_with_remote_bitfile_exec")
+    # image = Image.open('/workspace/finn/onnx_experiments/img_MNIST_grayscale.png')
+    # x = TF.to_tensor(image)
+    # x.unsqueeze_(0)
+    #
+    # parent_model = load("5_dataflow_parent")
+    # sdp_node = parent_model.graph.node[2]
+    # remote_exec_model = build_dir + "8_deploy.onnx"
+    # getCustomOp(sdp_node).set_nodeattr("model", remote_exec_model)
+    # save(parent_model,"9_dataflow_parent_with_remote_bitfile_exec")
 
     # THROUGHPUT TESTS
     from finn.core.throughput_test import throughput_test_remote
-
-    child_model = ModelWrapper(getCustomOp(sdp_node).get_nodeattr("model"))
-    res = throughput_test_remote(child_model,batchsize=10000)
+    res = throughput_test_remote(model,batchsize=10000)
     print("Network metrics:")
     with open(build_dir+"res.txt","w") as f:
         for key in res:
@@ -279,14 +277,12 @@ if __name__ == "__main__":
     # peformance
     print("We reach approximately " + str(round((measured_throughput / expected_throughput)*100)) + "% of the ideal performance.")
 
-    with open(build_dir+"res.txt","a") as f:
-        f.write("We reach approximately " + str(round((measured_throughput / expected_throughput)*100)) + "% of the ideal performance." + "\n")
-
-
-    finn_dev_files = os.listdir("/tmp/finn_dev_quentin/")
-    for file in finn_dev_files:
-        if file.startswith("vivado_zynq"):
-            vivado_zynq_build = file
-    shutil.move("/tmp/finn_dev_quentin/"+vivado_zynq_build, build_dir+"vivado_proj/")
-
-    # Need to copy the different files to save them
+    # with open(build_dir+"res.txt","a") as f:
+    #     f.write("We reach approximately " + str(round((measured_throughput / expected_throughput)*100)) + "% of the ideal performance." + "\n")
+    #
+    #
+    # finn_dev_files = os.listdir("/tmp/finn_dev_quentin/")
+    # for file in finn_dev_files:
+    #     if file.startswith("vivado_zynq"):
+    #         vivado_zynq_build = file
+    # shutil.move("/tmp/finn_dev_quentin/"+vivado_zynq_build, build_dir+"vivado_proj/")
