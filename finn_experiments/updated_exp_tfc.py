@@ -223,14 +223,14 @@ if __name__ == "__main__":
     target_dir = "/home/xilinx/finn_tfc_experiment"
 
     # Transformations
-    # model = tidy_up(model)
-    # model = streamline(model, binary)
-    # model = hls_conversion(model, binary)
-    # model = create_dataflow_partition(model)
-    # model = folding(model)
-    # # Synthesis
-    # model = create_IP_and_synthesis(model, pynq_board, target_clk_ns)
-    model = load("7_post_synthesis")
+    model = tidy_up(model)
+    model = streamline(model, binary)
+    model = hls_conversion(model, binary)
+    model = create_dataflow_partition(model)
+    model = folding(model)
+    # Synthesis
+    model = create_IP_and_synthesis(model, pynq_board, target_clk_ns)
+    # model = load("7_post_synthesis")
     # PYNQ Deployment
     model = deploy(model, ip, port, username, password, target_dir)
 
