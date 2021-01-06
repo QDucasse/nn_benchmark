@@ -31,7 +31,7 @@ if __name__ == "__main__":
             model_state_dict = package['state_dict']
             tfc.load_state_dict(model_state_dict)
             # Generate ONNX counterpart
-            output_path = "/workspace/finn/onnx_experiments/QuantTFC_A{0}W{1}I{2}".format(acq, weq, inq)
+            output_path = "/workspace/finn/trained_onnx/QuantTFC_A{0}W{1}I{2}".format(acq, weq, inq)
             print("Exporting QuantTFC_A{0}W{1}I{2}.onnx".format(acq,weq,inq))
             exporter.export_onnx(model = tfc, output_dir_path = output_path, in_channels = 1,
                                  act_bit_width = acq, weight_bit_width = weq, input_bit_width = inq,

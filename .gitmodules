@@ -1,0 +1,3 @@
+[submodule "finn"]
+	path = finn
+	url = git@github.com:QDucasse/finn.git
