@@ -57,7 +57,7 @@ setup(
     packages=find_packages(),
 
     install_requires=[
-        "numpy==1.18.0",
+        "numpy==1.19.5",
         "torch",
         "torchvision",
         "matplotlib",
