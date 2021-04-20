@@ -61,7 +61,7 @@ setup(
         "torch",
         "torchvision",
         "matplotlib",
-        "onnx==1.5.0",
+        "onnx==1.9.0",
         "onnxruntime==1.2.0",
         "pytest",
         "pandas"
